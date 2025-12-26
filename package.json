@@ -1,0 +1,21 @@
+{
+  "name": "@potonz/shortlinks-manage-cf-d1",
+  "module": "src/index.ts",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "bundle": "bun build src/index.ts --outdir dist --sourcemap --target node"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@stylistic/eslint-plugin": "^5.6.1",
+    "@types/bun": "latest",
+    "eslint-plugin-import-x": "^4.16.1",
+    "globals": "^16.5.0",
+    "typescript-eslint": "^8.50.1",
+    "wrangler": "^4.54.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
