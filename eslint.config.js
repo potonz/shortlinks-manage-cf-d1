@@ -5,19 +5,19 @@ import pluginJs from "@eslint/js";
 import tseslint from "typescript-eslint";
 import stylistic from "@stylistic/eslint-plugin";
 import { importX } from "eslint-plugin-import-x";
+import { defineConfig, globalIgnores } from "eslint/config";
 
-export default [
+export default defineConfig([
+    globalIgnores(["dist/**/*"], "Ignores dist files"),
     {
-        files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
+        files: ["**/*.{js,mjs,cjs,ts}"],
         languageOptions: {
             globals: globals.node,
         },
     },
     {
-        files: ["**/*.{ts,tsx}"],
+        files: ["**/*.ts"],
         languageOptions: {
-            sourceType: "module",
-            ecmaVersion: 2020,
             parser: tseslint.parser,
             parserOptions: {
                 project: true,
@@ -32,10 +32,8 @@ export default [
                 },
             ],
         },
-        plugins: {
-            import: importX,
-        },
     },
+    importX.flatConfigs.typescript,
     pluginJs.configs.recommended,
     ...tseslint.configs.recommended,
     stylistic.configs.customize({
@@ -73,4 +71,4 @@ export default [
             "no-shadow": "off",
         },
     },
-];
+]);

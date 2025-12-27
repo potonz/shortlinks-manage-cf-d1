@@ -1,0 +1,20 @@
+/**
+ * This file is just here to generate types
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "shortlinks-manage-cf-d1",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-12-25",
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			// Dummy local DB only
+			"binding": "DB",
+			"database_id": "018648ab-e976-4825-847e-91c9293f2137",
+			"database_name": "shortlinks",
+		}
+	]
+}

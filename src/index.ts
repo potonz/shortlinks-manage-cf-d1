@@ -1,1 +1,2 @@
-console.log("Hello via Bun!");
+import "./worker-configuration.d.ts";
+export * from "./manager";
