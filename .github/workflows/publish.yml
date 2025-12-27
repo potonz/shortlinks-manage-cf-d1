@@ -1,0 +1,26 @@
+name: NPM publish
+
+on:
+  push:
+    tags:
+      # Run workflow on version tags, e.g. v1.2.3
+      - "v*.*.*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Bundle
+        run: bun run bundle
+
+      - name: Publish
+        run: bun publish
