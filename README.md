@@ -1,15 +1,5 @@
 # @potonz/shortlinks-manage-cf-d1
 
-To install dependencies:
+Manage short links with Cloudflare D1 database.
 
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run src/index.ts
-```
-
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+To be used inside Cloudflare Workers.
