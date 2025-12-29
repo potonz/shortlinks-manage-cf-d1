@@ -14,7 +14,7 @@
 			// Dummy local DB only
 			"binding": "DB",
 			"database_id": "018648ab-e976-4825-847e-91c9293f2137",
-			"database_name": "shortlinks",
+			"database_name": "shortlinks"
 		}
 	]
 }

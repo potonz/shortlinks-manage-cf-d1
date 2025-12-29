@@ -13,7 +13,7 @@ type Options = Omit<EntryPointConfig, "filePath"> & {
     compilationOptions?: CompilationOptions;
 };
 
-const dts = (options?: Options): BunPlugin => {
+function dts(options?: Options): BunPlugin {
     return {
         name: "bun-plugin-dts",
         async setup(build) {
@@ -54,32 +54,39 @@ const dts = (options?: Options): BunPlugin => {
     };
 };
 
-// Remove old files
-rmSync("dist", { recursive: true, force: true });
+const license = await Bun.file("LICENSE").text();
 
-// Bundle JS files
-await Bun.build({
-    entrypoints: ["src/index.ts"],
-    outdir: "dist",
-    format: "esm",
-    target: "node",
-    sourcemap: "linked",
-    minify: true,
-    external: ["node:*"],
-    banner: `/* ${await Bun.file("LICENSE").text()} */`,
-    plugins: [
-        dts({
-            compilationOptions: {
-                preferredConfigPath: "tsconfig.bundle.json",
-            },
-        }),
-    ],
-});
+async function buildPackage(name: string) {
+    // Remove old files
+    rmSync(`./packages/${name}/dist`, { recursive: true, force: true });
 
-// Remove dependencies from package.json
-const packageJson = await Bun.file("package.json").json();
-delete packageJson.devDependencies;
-delete packageJson.peerDependencies;
-delete packageJson.scripts;
-// Write package.json
-await Bun.write("dist/package.json", JSON.stringify(packageJson, null, 2));
+    // Bundle
+    await Bun.build({
+        entrypoints: [`./packages/${name}/src/index.ts`],
+        outdir: `./packages/${name}/dist`,
+        format: "esm",
+        target: "node",
+        sourcemap: false,
+        minify: true,
+        external: ["node:*", "bun:*"],
+        banner: `/* ${license} */\n`,
+        plugins: [
+            dts({
+                compilationOptions: {
+                    preferredConfigPath: `./packages/${name}/tsconfig.bundle.json`,
+                },
+            }),
+        ],
+    });
+
+    // Remove dependencies from package.json
+    const packageJson = await Bun.file(`./packages/${name}/package.json`).json();
+    delete packageJson.devDependencies;
+    delete packageJson.peerDependencies;
+    delete packageJson.optionalDependencies;
+    delete packageJson.scripts;
+    await Bun.write(`./packages/${name}/dist/package.json`, JSON.stringify(packageJson, null, 2));
+}
+
+await buildPackage("shortlinks-manager");
+await buildPackage("shortlinks-manager-cloudflare-d1");
