@@ -8,7 +8,7 @@ import { importX } from "eslint-plugin-import-x";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-    globalIgnores(["dist/**/*"], "Ignores dist files"),
+    globalIgnores(["**/dist/**/*"], "Ignores dist files"),
     {
         files: ["**/*.{js,mjs,cjs,ts}"],
         languageOptions: {
@@ -20,7 +20,7 @@ export default defineConfig([
         languageOptions: {
             parser: tseslint.parser,
             parserOptions: {
-                project: true,
+                project: ["tsconfig.json", "./packages/*/tsconfig.json"],
                 parser: tseslint.parser,
             },
         },

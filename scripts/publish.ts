@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 import { $ } from "bun";
 import { glob } from "fs/promises";
 import { dirname, join } from "path";

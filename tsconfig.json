@@ -3,8 +3,9 @@
     // Environment setup & latest features
     "lib": [ "ESNext" ],
     "target": "es2020",
-    "module": "esnext",
-    "allowJs": false,
+    "module": "Preserve",
+    "moduleDetection": "force",
+    "allowJs": true,
 
     // Bundler mode
     "moduleResolution": "bundler",
