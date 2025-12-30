@@ -57,6 +57,12 @@ export interface IShortLinksManager {
      * @throws Error if failed
      */
     getTargetUrl(shortId: string): Promise<string | null>;
+
+    /**
+     * Clean up unused links that are older than the given maxAge
+     * @param maxAge number of days the record should be kept
+     */
+    cleanUnusedLinks(maxAge: number): Promise<void>;
 }
 
 export async function createManager({ backend, shortIdLength, onShortIdLengthUpdated }: IManagerProps): Promise<IShortLinksManager> {
@@ -66,7 +72,7 @@ export async function createManager({ backend, shortIdLength, onShortIdLengthUpd
         async createShortLink(targetUrl: string): Promise<string> {
             let shortId = "";
 
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 3; i++) {
                 // Generate multiple IDs to check if any of them are not already taken
                 // Then use the first one that is not
                 const listToTest = generateUniqueShortIds(50, shortIdLength);
@@ -83,13 +89,22 @@ export async function createManager({ backend, shortIdLength, onShortIdLengthUpd
                 }
             }
 
+            if (!shortId) {
+                throw new Error("Unable to create a shortlink, potentially ran out");
+            }
+
             await backend.createShortLink(shortId, targetUrl);
 
             return shortId;
         },
 
         async getTargetUrl(shortId) {
+            await backend.updateShortLinkLastAccessTime(shortId);
             return await backend.getTargetUrl(shortId);
+        },
+
+        async cleanUnusedLinks(maxAge: number) {
+            await backend.cleanUnusedLinks(maxAge);
         },
     };
 }
