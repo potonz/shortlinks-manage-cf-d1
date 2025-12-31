@@ -15,7 +15,6 @@
   "license": "MIT",
   "scripts": {
     "test": "bun test",
-    "pack": "bun pm pack --destination ../../tarballs",
     "cf-typegen": "wrangler types src/worker-configuration.d.ts"
   },
   "dependencies": {

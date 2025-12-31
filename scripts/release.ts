@@ -1,5 +1,4 @@
-import { Glob } from "bun";
-import { execSync } from "child_process";
+import { $, Glob } from "bun";
 import { createSpinner } from "nanospinner";
 import { argv } from "process";
 import { createInterface } from "readline";
@@ -16,7 +15,7 @@ const question = function (query: string) {
 };
 
 if (argv.length < 3) {
-    console.log("Usage: bun release.js <version>");
+    console.log("Usage: bun release.ts <version>");
     process.exit(1);
 }
 
@@ -39,7 +38,7 @@ async function updatePkgJson(file: string) {
     }
 }
 
-const pkgJsonGlob = new Glob("**/package.json");
+const pkgJsonGlob = new Glob("packages/*/package.json");
 for await (const file of pkgJsonGlob.scan()) {
     await updatePkgJson(file);
 }
@@ -47,7 +46,7 @@ for await (const file of pkgJsonGlob.scan()) {
 // Run git-cliff to generate CHANGELOG.md
 let spinner = createSpinner("Generating CHANGELOG.md").start();
 try {
-    execSync(`git cliff -u -t v${version} -s all -p CHANGELOG.md`);
+    await $`git cliff -u -t v${version} -s all -p CHANGELOG.md`.quiet();
     spinner.success({ text: "CHANGELOG.md generated" });
 }
 catch {
@@ -58,9 +57,9 @@ catch {
 // Create a git tag
 spinner = createSpinner("Creating git tag").start();
 try {
-    execSync("git add .");
-    execSync(`git commit -m "chore(release): prepare for v${version}"`);
-    execSync(`git tag -a v${version} -m "Release v${version}"`);
+    await $`git add .`;
+    await $`git commit -m "chore(release): prepare for v${version}"`;
+    await $`git tag -a v${version} -m "Release v${version}"`;
 
     spinner.success({ text: "Git tag created" });
 }
@@ -76,7 +75,7 @@ try {
         // Push changes to GitHub
         spinner = createSpinner("Pushing changes to GitHub").start();
         try {
-            execSync("git push");
+            await $`git push`;
             spinner.success({ text: "Changes pushed to GitHub" });
         }
         catch {
@@ -100,7 +99,7 @@ try {
         // Push tag to GitHub
         spinner = createSpinner("Pushing tag to GitHub").start();
         try {
-            execSync(`git push origin v${version}`);
+            await $`git push origin v${version}`;
             spinner.success({ text: "Tag pushed to GitHub" });
         }
         catch {
@@ -108,12 +107,10 @@ try {
             process.exit(1);
         }
     }
-    else {
-        process.exit(0);
-    }
 }
 catch (err) {
     console.log(err);
+    process.exit(1);
 }
 
 readline.close();

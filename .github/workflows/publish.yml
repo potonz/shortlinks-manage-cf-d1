@@ -6,6 +6,9 @@ on:
       # Run workflow on version tags, e.g. v1.2.3
       - "v*.*.*"
 
+permissions:
+  contents: read
+
 jobs:
   test:
     uses: ./.github/workflows/test.yml
@@ -32,13 +35,13 @@ jobs:
           bun-version: latest
 
       # Needed to publish package
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun ci
 
       - name: Build
         run: bun run build
