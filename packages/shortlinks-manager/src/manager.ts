@@ -1,3 +1,4 @@
+import type { ICache } from "./cache";
 import { generateUniqueShortIds } from "./utils";
 
 export interface IShortLinksManagerBackend {
@@ -37,6 +38,12 @@ export interface IShortLinksManagerBackend {
 
 interface IManagerProps {
     backend: IShortLinksManagerBackend;
+    /**
+     * A list of cache to use before invoking the backend.
+     * If multiple cache are provided, the manager will try from first to last.
+     * Default to no cache
+     */
+    caches?: ICache[];
     shortIdLength: number;
     onShortIdLengthUpdated: (newLength: number) => unknown;
 }
@@ -54,18 +61,27 @@ export interface IShortLinksManager {
      * Get a target URL from the given short ID
      * @param shortId
      * @returns the target URL as string or null if not found
-     * @throws Error if failed
+     * @throws Error if backend failed
      */
     getTargetUrl(shortId: string): Promise<string | null>;
 
     /**
+     * Update last accessed time to avoid link being cleaned
+     * @param shortId
+     * @param time last accessed time. Defaults to current time
+     * @throws Error if backend failed
+     */
+    updateShortLinkLastAccessTime(shortId: string, time: Date): Promise<void>;
+
+    /**
      * Clean up unused links that are older than the given maxAge
      * @param maxAge number of days the record should be kept
+     * @throws Error if backend failed
      */
     cleanUnusedLinks(maxAge: number): Promise<void>;
 }
 
-export async function createManager({ backend, shortIdLength, onShortIdLengthUpdated }: IManagerProps): Promise<IShortLinksManager> {
+export async function createManager({ backend, caches = [], shortIdLength, onShortIdLengthUpdated }: IManagerProps): Promise<IShortLinksManager> {
     await backend.init?.();
 
     return {
@@ -99,8 +115,32 @@ export async function createManager({ backend, shortIdLength, onShortIdLengthUpd
         },
 
         async getTargetUrl(shortId) {
-            await backend.updateShortLinkLastAccessTime(shortId);
-            return await backend.getTargetUrl(shortId);
+            let targetUrl: string | null = null;
+
+            for (const cache of caches) {
+                await cache.init?.();
+                if (!targetUrl) {
+                    targetUrl = await cache.get(shortId);
+                }
+            }
+
+            if (!targetUrl) {
+                targetUrl = await backend.getTargetUrl(shortId);
+            }
+
+            if (targetUrl) {
+                await backend.updateShortLinkLastAccessTime(shortId);
+
+                for (const cache of caches) {
+                    await cache.set(shortId, targetUrl);
+                }
+            }
+
+            return targetUrl;
+        },
+
+        async updateShortLinkLastAccessTime(shortId) {
+            return await backend.updateShortLinkLastAccessTime(shortId);
         },
 
         async cleanUnusedLinks(maxAge: number) {
