@@ -11,7 +11,7 @@ export default defineConfig([
     {
         files: ["**/*.{js,mjs,cjs,ts}"],
         languageOptions: {
-            globals: globals.node,
+            globals: globals.bunBuiltin,
         },
     },
     {
