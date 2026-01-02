@@ -1,3 +1,13 @@
+## [0.2.0] - 2026-01-02
+
+### ⛰️  Features
+
+- *(shortlinks-manager)* Added multi-cache support
+
+### ⚙️ Miscellaneous Tasks
+
+- *(deps-dev)* Bump typescript-eslint from 8.50.1 to 8.51.0
+
 ## [0.1.1] - 2025-12-31
 
 ### ⛰️  Features
