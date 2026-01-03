@@ -1,3 +1,9 @@
+## [0.2.2] - 2026-01-03
+
+### ⚡ Performance
+
+- *(shortlinks-manager)* Only update caches that have missed
+
 ## [0.2.1] - 2026-01-03
 
 ### ⛰️  Features
