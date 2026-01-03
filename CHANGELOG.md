@@ -1,3 +1,18 @@
+## [0.2.1] - 2026-01-03
+
+### ⛰️  Features
+
+- *(shortlinks-manager)* Added multi-cache support
+
+### 🧪 Testing
+
+- *(shortlinks-manager)* Added tests for `waitUntil` func
+
+### ⚙️ Miscellaneous Tasks
+
+- *(deps-dev)* Bump typescript-eslint from 8.50.1 to 8.51.0
+- *(deps-dev)* Bump globals from 16.5.0 to 17.0.0
+
 ## [0.2.0] - 2026-01-02
 
 ### ⛰️  Features
