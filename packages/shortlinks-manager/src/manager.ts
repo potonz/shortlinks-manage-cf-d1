@@ -144,15 +144,19 @@ export async function createManager({ backend, caches = [], shortIdLength, onSho
 
         async getTargetUrl(shortId) {
             let targetUrl: string | null = null;
+            let cacheHitIndex = -1;
 
-            for (const cache of caches) {
-                if (!cache.initialised) {
-                    await cache.init?.();
-                    cache.initialised = true;
+            for (let i = 0; i < caches.length; i++) {
+                if (!caches[i].initialised) {
+                    await caches[i].init?.();
+                    caches[i].initialised = true;
                 }
 
-                targetUrl = await cache.get(shortId);
-                if (targetUrl) break;
+                targetUrl = await caches[i].get(shortId);
+                if (targetUrl) {
+                    cacheHitIndex = i;
+                    break;
+                }
             }
 
             if (!targetUrl) {
@@ -170,13 +174,20 @@ export async function createManager({ backend, caches = [], shortIdLength, onSho
                     }
                 }
 
-                for (const cache of caches) {
+                // Only update caches that were miss
+                // Avoid rewriting to a hit cache
+                let cacheToUpdateCount = caches.length;
+                if (cacheHitIndex >= 0) {
+                    cacheToUpdateCount = cacheHitIndex;
+                }
+
+                for (let i = 0; i < cacheToUpdateCount; i++) {
                     const updateRes = (async function () {
-                        if (!cache.initialised) {
-                            await cache.init?.();
-                            cache.initialised = true;
+                        if (!caches[i].initialised) {
+                            await caches[i].init?.();
+                            caches[i].initialised = true;
                         }
-                        await cache.set(shortId, targetUrl);
+                        await caches[i].set(shortId, targetUrl);
                     })();
 
                     if (waitUntil) {

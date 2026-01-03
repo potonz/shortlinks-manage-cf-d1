@@ -135,7 +135,7 @@ test("should be called in getTargetUrl with cache hit and update last accessed t
     await manager.getTargetUrl(shortId);
 
     // Verify that waitUntil was called
-    expect(dummyWaitUntil).toHaveBeenCalledTimes(2);
+    expect(dummyWaitUntil).toHaveBeenCalledTimes(1);
 });
 
 test("should be called in getTargetUrl with cache miss and update last accessed time", async () => {
