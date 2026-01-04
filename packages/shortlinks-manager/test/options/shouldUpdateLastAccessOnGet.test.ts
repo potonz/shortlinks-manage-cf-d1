@@ -22,11 +22,11 @@ beforeEach(async () => {
 
     dummyBackend = {
         map,
-        getTargetUrl: function (shortId: string): string | null {
+        getTargetUrl(shortId: string): string | null {
             const value = map.get(shortId);
             return value?.targetUrl ?? null;
         },
-        createShortLink: function (shortId: string, targetUrl: string): void | Promise<void> {
+        createShortLink(shortId: string, targetUrl: string): void {
             if (map.has(shortId)) {
                 throw new Error("short id not found");
             }
@@ -36,26 +36,31 @@ beforeEach(async () => {
                 lastAccessedAt: new Date(),
             });
         },
-        checkShortIdsExist: function (shortIds: string[]): string[] | Promise<string[]> {
+        checkShortIdsExist(shortIds: string[]): string[] {
             return shortIds.filter(id => map.has(id));
         },
-        updateShortLinkLastAccessTime: function (shortId: string): void | Promise<void> {
+        updateShortLinkLastAccessTime(shortId: string): void {
             const value = map.get(shortId);
             if (value) {
                 value.lastAccessedAt = new Date();
             }
         },
-        cleanUnusedLinks: function (maxAge: number): void | Promise<void> {
+        cleanUnusedLinks(maxAge: number): string[] {
             // Delete entries older than maxAge days
             const now = new Date();
             const cutoffDate = new Date(now);
             cutoffDate.setDate(now.getDate() - maxAge);
 
+            const deletedShortIds = [];
+
             for (const [shortId, data] of map.entries()) {
                 if (data.lastAccessedAt < cutoffDate) {
                     map.delete(shortId);
+                    deletedShortIds.push(shortId);
                 }
             }
+
+            return deletedShortIds;
         },
     };
 });

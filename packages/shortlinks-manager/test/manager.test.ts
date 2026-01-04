@@ -23,11 +23,11 @@ beforeEach(async () => {
 
     dummyBackend = {
         map,
-        getTargetUrl: function (shortId: string): string | null {
+        getTargetUrl(shortId: string): string | null {
             const value = map.get(shortId);
             return value?.targetUrl ?? null;
         },
-        createShortLink: function (shortId: string, targetUrl: string): void | Promise<void> {
+        createShortLink(shortId: string, targetUrl: string): void {
             if (map.has(shortId)) {
                 throw new Error("short id not found");
             }
@@ -37,26 +37,31 @@ beforeEach(async () => {
                 lastAccessedAt: new Date(),
             });
         },
-        checkShortIdsExist: function (shortIds: string[]): string[] | Promise<string[]> {
+        checkShortIdsExist(shortIds: string[]): string[] {
             return shortIds.filter(id => map.has(id));
         },
-        updateShortLinkLastAccessTime: function (shortId: string): void | Promise<void> {
+        updateShortLinkLastAccessTime(shortId: string): void {
             const value = map.get(shortId);
             if (value) {
                 value.lastAccessedAt = new Date();
             }
         },
-        cleanUnusedLinks: function (maxAge: number): void | Promise<void> {
+        cleanUnusedLinks(maxAge: number): string[] {
             // Delete entries older than maxAge days
             const now = new Date();
             const cutoffDate = new Date(now);
             cutoffDate.setDate(now.getDate() - maxAge);
 
+            const deletedShortIds = [];
+
             for (const [shortId, data] of map.entries()) {
                 if (data.lastAccessedAt < cutoffDate) {
                     map.delete(shortId);
+                    deletedShortIds.push(shortId);
                 }
             }
+
+            return deletedShortIds;
         },
     };
 
@@ -164,4 +169,67 @@ test("cleanUnusedLinks should remove entries older than maxAge", async () => {
 
     // shortId2 should still exist (newer than 30 days)
     expect(await manager.getTargetUrl(shortId2)).toBe(url2);
+});
+
+test("cleanUnusedLinks should remove entries from caches as well", async () => {
+    // Create a simple in-memory cache for testing
+    class InMemoryCache {
+        private cache: Map<string, string> = new Map();
+
+        get(shortId: string): string | null {
+            return this.cache.get(shortId) || null;
+        }
+
+        set(shortId: string, targetUrl: string): void {
+            this.cache.set(shortId, targetUrl);
+        }
+
+        delete(shortId: string) {
+            this.cache.delete(shortId);
+        }
+    }
+
+    // Set up manager with cache
+    const dummyCache = new InMemoryCache();
+    const cacheManager = await createManager({
+        backend: dummyBackend,
+        caches: [dummyCache],
+        shortIdLength,
+        onShortIdLengthUpdated: (newLength) => {
+            shortIdLength = newLength;
+        },
+    });
+
+    // Create some test entries
+    const url1 = "https://example.com/old";
+    const url2 = "https://example.com/new";
+
+    const shortId1 = await cacheManager.createShortLink(url1);
+    const shortId2 = await cacheManager.createShortLink(url2);
+
+    // Verify both entries exist and are cached
+    expect(await cacheManager.getTargetUrl(shortId1)).toBe(url1);
+    expect(await cacheManager.getTargetUrl(shortId2)).toBe(url2);
+
+    // Verify cache has entries
+    expect(dummyCache.get(shortId1)).toBe(url1);
+    expect(dummyCache.get(shortId2)).toBe(url2);
+
+    // Manually set the last accessed time for shortId1 to be old (35 days ago)
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 35); // 35 days ago
+
+    // Update the lastAccessedAt timestamp for the first entry
+    dummyBackend.map.get(shortId1)!.lastAccessedAt = oldDate;
+
+    // Call cleanUnusedLinks with maxAge of 30 days
+    await cacheManager.cleanUnusedLinks(30);
+
+    // shortId1 should be removed from both backend and cache
+    expect(await cacheManager.getTargetUrl(shortId1)).toBeNull();
+    expect(dummyCache.get(shortId1)).toBeNull();
+
+    // shortId2 should still exist in both backend and cache
+    expect(await cacheManager.getTargetUrl(shortId2)).toBe(url2);
+    expect(dummyCache.get(shortId2)).toBe(url2);
 });

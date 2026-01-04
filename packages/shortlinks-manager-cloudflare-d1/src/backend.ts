@@ -73,12 +73,14 @@ PRAGMA optimize;
             await stmt_updateShortLinkLastAccessed.bind(formatDbDateTime(_time), shortId).run();
         },
 
-        async cleanUnusedLinks(maxAge: number): Promise<void> {
+        async cleanUnusedLinks(maxAge: number): Promise<string[]> {
             if (!stmt_cleanUnusedLinks) {
-                stmt_cleanUnusedLinks = db.prepare("DELETE FROM sl_links_map WHERE last_accessed_at < datetime(CURRENT_TIMESTAMP, ?)");
+                stmt_cleanUnusedLinks = db.prepare("DELETE FROM sl_links_map WHERE last_accessed_at < datetime(CURRENT_TIMESTAMP, ?) RETURNING short_id");
             }
 
-            await stmt_cleanUnusedLinks.bind(`-${maxAge} days`).run();
+            const result = await stmt_cleanUnusedLinks.bind(`-${maxAge} days`).all<{ short_id: string }>();
+
+            return result.results.map(r => r.short_id);
         },
     };
 }

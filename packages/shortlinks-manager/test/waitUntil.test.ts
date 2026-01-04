@@ -39,11 +39,11 @@ beforeEach(async () => {
 
     dummyBackend = {
         map,
-        getTargetUrl: function (shortId: string): string | null {
+        getTargetUrl(shortId: string): string | null {
             const value = map.get(shortId);
             return value?.targetUrl ?? null;
         },
-        createShortLink: function (shortId: string, targetUrl: string): void | Promise<void> {
+        createShortLink(shortId: string, targetUrl: string): void {
             if (map.has(shortId)) {
                 throw new Error("short id not found");
             }
@@ -53,7 +53,7 @@ beforeEach(async () => {
                 lastAccessedAt: new Date(),
             });
         },
-        checkShortIdsExist: function (shortIds: string[]): string[] | Promise<string[]> {
+        checkShortIdsExist(shortIds: string[]): string[] {
             return shortIds.filter(id => map.has(id));
         },
         async updateShortLinkLastAccessTime(shortId: string): Promise<void> {
@@ -62,17 +62,22 @@ beforeEach(async () => {
                 value.lastAccessedAt = new Date();
             }
         },
-        cleanUnusedLinks: function (maxAge: number): void | Promise<void> {
+        cleanUnusedLinks(maxAge: number): string[] {
             // Delete entries older than maxAge days
             const now = new Date();
             const cutoffDate = new Date(now);
             cutoffDate.setDate(now.getDate() - maxAge);
 
+            const deletedShortIds = [];
+
             for (const [shortId, data] of map.entries()) {
                 if (data.lastAccessedAt < cutoffDate) {
                     map.delete(shortId);
+                    deletedShortIds.push(shortId);
                 }
             }
+
+            return deletedShortIds;
         },
     };
 
@@ -129,18 +134,23 @@ test("should be called when updating short id length", async () => {
 test("should be called in getTargetUrl with cache hit and update last accessed time", async () => {
     // Create a short link first
     const shortId = await manager.createShortLink("https://poto.nz");
-    expect(dummyWaitUntil).toHaveBeenCalledTimes(0);
+    expect(dummyWaitUntil).toHaveBeenCalledTimes(1);
 
-    await dummyCache.set(shortId, "https://poto.nz");
     await manager.getTargetUrl(shortId);
 
     // Verify that waitUntil was called
-    expect(dummyWaitUntil).toHaveBeenCalledTimes(1);
+    expect(dummyWaitUntil).toHaveBeenCalledTimes(2);
 });
 
 test("should be called in getTargetUrl with cache miss and update last accessed time", async () => {
-    // Create a short link first
-    const shortId = await manager.createShortLink("https://poto.nz");
+    const managerWithoutCache = await createManager({
+        backend: dummyBackend,
+        shortIdLength: shortIdLength,
+        onShortIdLengthUpdated: (newLength: number) => {
+            shortIdLength = newLength;
+        },
+    });
+    const shortId = await managerWithoutCache.createShortLink("https://poto.nz");
     expect(dummyWaitUntil).toHaveBeenCalledTimes(0);
 
     await manager.getTargetUrl(shortId);
@@ -173,7 +183,7 @@ test("should not be called in getTargetUrl with synchronous update last accessed
 
     // Create a short link first
     const shortId = await syncManager.createShortLink("https://poto.nz");
-    expect(dummyWaitUntil).toHaveBeenCalledTimes(0);
+    expect(dummyWaitUntil).toHaveBeenCalledTimes(1);
 
     await syncManager.getTargetUrl(shortId);
 

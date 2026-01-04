@@ -12,18 +12,18 @@ export interface IShortLinksManagerBackend {
      * @param {string} shortId
      * @returns the short ID or null if not found
      */
-    getTargetUrl: (shortId: string) => string | null | Promise<string | null>;
+    getTargetUrl(shortId: string): string | null | Promise<string | null>;
     /**
      * Create a short link map with the given short ID and target URL
      * @param {string} shortId
      * @param {string} targetUrl
      */
-    createShortLink: (shortId: string, targetUrl: string) => void | Promise<void>;
+    createShortLink(shortId: string, targetUrl: string): void | Promise<void>;
     /**
      * Check the provided list of short IDs and return the ones that already exist.
      * @param {string[]} shortIds
      */
-    checkShortIdsExist: (shortIds: string[]) => string[] | Promise<string[]>;
+    checkShortIdsExist(shortIds: string[]): string[] | Promise<string[]>;
     /**
      * Update last accessed time to current timestamp
      * @param shortId
@@ -33,8 +33,9 @@ export interface IShortLinksManagerBackend {
     /**
      * Remove unused links that are older than the given maxAge
      * @param maxAge number of days the record should be kept
+     * @returns an array of short IDs that have been cleaned
      */
-    cleanUnusedLinks(maxAge: number): void | Promise<void>;
+    cleanUnusedLinks(maxAge: number): string[] | Promise<string[]>;
 }
 
 interface IManagerProps {
@@ -227,7 +228,21 @@ export async function createManager({ backend, caches = [], shortIdLength, onSho
         },
 
         async cleanUnusedLinks(maxAge: number) {
-            await backend.cleanUnusedLinks(maxAge);
+            const shortIds = await backend.cleanUnusedLinks(maxAge);
+
+            // Remove from all caches
+            for (const cache of caches) {
+                if (cache.delete) {
+                    if (!cache.initialised) {
+                        await cache.init?.();
+                        cache.initialised = true;
+                    }
+
+                    for (const shortId of shortIds) {
+                        await cache.delete(shortId);
+                    }
+                }
+            }
         },
     };
 }
