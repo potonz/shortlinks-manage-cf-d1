@@ -139,6 +139,25 @@ export async function createManager({ backend, caches = [], shortIdLength, onSho
 
             await backend.createShortLink(shortId, targetUrl);
 
+            if (caches.length > 0) {
+                const cachePromise = (async () => {
+                    for (let i = 0; i < caches.length; i++) {
+                        if (!caches[i].initialised) {
+                            await caches[i].init?.();
+                            caches[i].initialised = true;
+                        }
+                        await caches[i].set(shortId, targetUrl);
+                    }
+                })();
+
+                if (waitUntil) {
+                    waitUntil(cachePromise);
+                }
+                else {
+                    await cachePromise;
+                }
+            }
+
             return shortId;
         },
 
