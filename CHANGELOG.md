@@ -1,3 +1,18 @@
+## [0.2.3] - 2026-01-31
+
+### ⛰️  Features
+
+- Delete cached short link if the backend cleans it
+- Added remove short link function
+
+### 🐛 Bug Fixes
+
+- Fixed missing optional time param for update link's last accessed
+
+### ⚡ Performance
+
+- Micro-optimise caching on create short link
+
 ## [0.2.2] - 2026-01-03
 
 ### ⚡ Performance
