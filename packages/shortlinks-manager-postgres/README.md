@@ -1,30 +1,29 @@
-# @potonz/shortlinks-manager-cf-d1
+# @potonz/shortlinks-manager-postgres
 
-Cloudflare D1 backend for short links manager.
+PostgreSQL backend for short links manager using [postgres.js](https://github.com/porsager/postgres).
 
 ## Features
 
-- Cloudflare D1 SQLite support for edge deployment
+- Full PostgreSQL support with prepared statements via postgres.js
 - Automatic table creation and indexing
-- Perfect for Cloudflare Workers environment
-- Built-in cache integration for high performance
-- Lightweight and efficient SQLite operations
+- Support for PostgreSQL 14, 15, 16, 17, and 18
+- Type-safe SQL with tagged template literals
+- Efficient parameterized queries
 
 ## Installation
 
 ```bash
-bun add @potonz/shortlinks-manager-cf-d1
+bun add @potonz/shortlinks-manager-postgres
 ```
 
 ## Usage
 
 ```typescript
 import { createManager } from "@potonz/shortlinks-manager";
-import { createD1Backend } from "@potonz/shortlinks-manager-cf-d1";
-import { env } from "cloudflare:workers";
+import { createPostgresBackend } from "@potonz/shortlinks-manager-postgres";
 
-// Create backend with D1 binding
-const backend = createD1Backend(env.DB);
+// Create backend with connection URI
+const backend = createPostgresBackend("postgres://user:password@localhost:5432/shortlinks");
 
 // Initialize tables (run once during setup)
 await backend.setupTables();
@@ -53,10 +52,10 @@ The backend automatically creates the following table:
 
 ```sql
 CREATE TABLE IF NOT EXISTS sl_links_map (
-    short_id TEXT NOT NULL PRIMARY KEY,
+    short_id VARCHAR(255) NOT NULL PRIMARY KEY,
     target_url TEXT NOT NULL,
-    last_accessed_at INTEGER DEFAULT (strftime('%s', 'now')),
-    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+    last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_sl_links_map_last_accessed_at 
@@ -65,14 +64,14 @@ ON sl_links_map(last_accessed_at);
 
 ## API
 
-### `createD1Backend(db: D1Database)`
+### `createPostgresBackend(connectionUri: string)`
 
-Creates a Cloudflare D1 backend instance.
+Creates a PostgreSQL backend instance.
 
 **Parameters:**
-- `db` - Cloudflare D1 database binding (typically from `env.DB` in Workers)
+- `connectionUri` - PostgreSQL connection URI (e.g., `postgres://user:password@localhost:5432/dbname`)
 
-**Returns:** `IShortLinksManagerBackend`
+**Returns:** `IShortLinksManagerPostgresBackend`
 
 ### `backend.setupTables()`
 
@@ -89,47 +88,27 @@ Implements all `IShortLinksManagerBackend` methods:
 - `cleanUnusedLinks(maxAge)` - Remove links not accessed in `maxAge` days
 - `removeShortLink(shortId)` - Remove a short link by ID
 
-## Cloudflare Workers Setup
-
-1. Configure D1 binding in `wrangler.jsonc`:
-
-```jsonc
-{
-    "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "your-worker-name",
-    "main": "src/index.ts",
-    "compatibility_date": "2025-12-25",
-    "d1_databases": [
-        {
-            "binding": "DB",
-            "database_id": "your-database-id",
-            "database_name": "shortlinks"
-        }
-    ]
-}
-```
-
-2. Create D1 database:
-
-```bash
-wrangler d1 create shortlinks
-```
-
-3. Deploy with Wrangler:
-
-```bash
-wrangler deploy
-```
-
 ## Testing
 
-Tests run against a local D1-compatible SQLite database.
+Tests run automatically in CI against PostgreSQL versions 14, 15, 16, 17, and 18.
 
 To run tests locally:
 
 ```bash
-bun test packages/shortlinks-manager-cf-d1
+# Start PostgreSQL (using Docker)
+docker run --name shortlinks-postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=shortlinks -p 5432:5432 -d postgres:16
+
+# Run tests
+POSTGRES_URI=postgres://postgres:password@localhost:5432/shortlinks bun test packages/shortlinks-manager-postgres
 ```
+
+## Supported PostgreSQL Versions
+
+- PostgreSQL 14 (until 2026)
+- PostgreSQL 15
+- PostgreSQL 16
+- PostgreSQL 17
+- PostgreSQL 18 (latest)
 
 ## License
 
