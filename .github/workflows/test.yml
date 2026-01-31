@@ -9,7 +9,52 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-core:
+    name: Test Core Package
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun ci
+
+      - name: Run core package tests
+        run: bun test packages/shortlinks-manager
+        env:
+          CI: true
+
+  test-cf-d1:
+    name: Test Cloudflare D1 Package
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun ci
+
+      - name: Run Cloudflare D1 package tests
+        run: bun test packages/shortlinks-manager-cloudflare-d1
+        env:
+          CI: true
+
+  test-postgres:
+    name: Test Postgres Package (PG ${{ matrix.postgres-version }})
     runs-on: ubuntu-latest
 
     permissions:
@@ -44,8 +89,8 @@ jobs:
       - name: Install dependencies
         run: bun ci
 
-      - name: Run tests (Postgres ${{ matrix.postgres-version }})
-        run: bun test
+      - name: Run Postgres package tests
+        run: bun test packages/shortlinks-manager-postgres
         env:
           CI: true
           POSTGRES_URI: postgres://postgres:password@localhost:5432/shortlinks
