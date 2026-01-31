@@ -59,7 +59,7 @@ export function createPostgresBackend(connectionUri: string): IShortLinksManager
                 WHERE short_id IN ${sql(shortIds)}
             `;
 
-            return result.map(r => r.short_id);
+            return result.map((r: { short_id: string }) => r.short_id);
         },
 
         async updateShortLinkLastAccessTime(shortId: string, time: number | Date = new Date()): Promise<void> {
@@ -78,11 +78,11 @@ export function createPostgresBackend(connectionUri: string): IShortLinksManager
         async cleanUnusedLinks(maxAge: number): Promise<string[]> {
             const result = await sql<{ short_id: string }[]>`
                 DELETE FROM sl_links_map 
-                WHERE last_accessed_at < NOW() - INTERVAL '${maxAge} days'
+                WHERE last_accessed_at < NOW() - make_interval(days => ${maxAge})
                 RETURNING short_id
             `;
 
-            return result.map(r => r.short_id);
+            return result.map((r: { short_id: string }) => r.short_id);
         },
 
         async removeShortLink(shortId: string): Promise<void> {
