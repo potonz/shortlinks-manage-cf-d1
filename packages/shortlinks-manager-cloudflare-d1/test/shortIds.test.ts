@@ -120,3 +120,29 @@ test("update short link last access time", async () => {
     // Verify the timestamp was updated
     expect(updatedResult!.last_accessed_at).not.toEqual(initialResult!.last_accessed_at);
 });
+
+test("remove existing short link", async () => {
+    const shortId = "removeTest";
+    const targetUrl = "https://poto.nz";
+
+    // Insert a record
+    await db.prepare("INSERT INTO sl_links_map (short_id, target_url) VALUES (?, ?)")
+        .bind(shortId, targetUrl)
+        .run();
+
+    // Verify the record exists
+    const beforeResult = await backend.getTargetUrl(shortId);
+    expect(beforeResult).toEqual(targetUrl);
+
+    // Remove the short link
+    await expect(backend.removeShortLink(shortId)).resolves.toBeUndefined();
+
+    // Verify the record no longer exists
+    const afterResult = await backend.getTargetUrl(shortId);
+    expect(afterResult).toBeNull();
+});
+
+test("remove non-existent short link should not throw error", async () => {
+    // Attempt to remove a short link that doesn't exist
+    await expect(backend.removeShortLink("non-existent-id")).resolves.toBeUndefined();
+});
