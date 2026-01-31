@@ -11,7 +11,7 @@
     "type": "git",
     "directory": "packages/shortlinks-manager-mysql"
   },
-  "version": "0.1.0",
+  "version": "0.2.4",
   "type": "module",
   "license": "MIT",
   "scripts": {

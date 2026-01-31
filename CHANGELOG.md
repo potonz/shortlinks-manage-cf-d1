@@ -1,3 +1,18 @@
+## [0.2.4] - 2026-01-31
+
+### ⛰️  Features
+
+- Added postgres backend (#5)
+- Added mysql backend (#6)
+
+### 🧪 Testing
+
+- Added tests for removeing a short link
+
+### ⚙️ Miscellaneous Tasks
+
+- *(actions)* Added testing mysql versions
+
 ## [0.2.3] - 2026-01-31
 
 ### ⛰️  Features
