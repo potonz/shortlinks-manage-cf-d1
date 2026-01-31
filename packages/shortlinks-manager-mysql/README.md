@@ -6,7 +6,7 @@ MySQL/MariaDB backend for short links manager using [mysql2](https://github.com/
 
 - Full MySQL and MariaDB support with mysql2
 - Automatic table creation and indexing
-- Support for MySQL 8.0+ and MariaDB 10.5+
+- Support for MySQL 8.0+ and MariaDB 10.11+
 - Promise-based API with async/await
 - Connection via URI string or configuration object
 - Parameterized queries for security
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS sl_links_map (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_sl_links_map_last_accessed_at 
+CREATE INDEX idx_sl_links_map_last_accessed_at
 ON sl_links_map(last_accessed_at);
 ```
 
@@ -115,17 +115,13 @@ MYSQL_URI=mysql://root:password@localhost:3306/shortlinks bun test packages/shor
 ## Supported Versions
 
 ### MySQL
-- MySQL 8.0 (current LTS)
-- MySQL 8.4 (innovation)
+- MySQL 8.0 (LTS, extended support until April 2026)
+- MySQL 8.4 (LTS)
 
 ### MariaDB
-- MariaDB 10.5
-- MariaDB 10.6
 - MariaDB 10.11 (LTS)
-- MariaDB 11.0
-- MariaDB 11.1
-- MariaDB 11.2
 - MariaDB 11.4 (LTS)
+- MariaDB 11.8 (LTS)
 
 ## License
 

@@ -108,10 +108,14 @@ jobs:
         include:
           - mysql-variant: mysql
             mysql-version: "8.0"
+          - mysql-variant: mysql
+            mysql-version: "8.4"
           - mysql-variant: mariadb
             mysql-version: "10.11"
           - mysql-variant: mariadb
             mysql-version: "11.4"
+          - mysql-variant: mariadb
+            mysql-version: "11.8"
 
     services:
       mysql:
