@@ -137,7 +137,7 @@ describe("remove existing short link", async () => {
     expect(beforeResult).toEqual(targetUrl);
 
     // Remove the short link
-    await expect(backend.removeShortLink(shortId)).resolves.toBeUndefined();
+    expect(backend.removeShortLink(shortId)).resolves.toBeUndefined();
 
     // Verify the record no longer exists
     const afterResult = await backend.getTargetUrl(shortId);
@@ -146,5 +146,5 @@ describe("remove existing short link", async () => {
 
 describe("remove non-existent short link should not throw error", async () => {
     // Attempt to remove a short link that doesn't exist
-    await expect(backend.removeShortLink("non-existent-id")).resolves.toBeUndefined();
+    expect(backend.removeShortLink("non-existent-id")).resolves.toBeUndefined();
 });
