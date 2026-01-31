@@ -36,6 +36,11 @@ export interface IShortLinksManagerBackend {
      * @returns an array of short IDs that have been cleaned
      */
     cleanUnusedLinks(maxAge: number): string[] | Promise<string[]>;
+    /**
+     * Remove a short link by its ID
+     * @param shortId the short ID to remove
+     */
+    removeShortLink(shortId: string): void | Promise<void>;
 }
 
 interface IManagerProps {
@@ -102,6 +107,13 @@ export interface IShortLinksManager {
      * @throws Error if backend failed
      */
     cleanUnusedLinks(maxAge: number): Promise<void>;
+
+    /**
+     * Remove a short link by its ID
+     * @param shortId the short ID to remove
+     * @throws Error if backend failed
+     */
+    removeShortLink(shortId: string): Promise<void>;
 }
 
 export async function createManager({ backend, caches = [], shortIdLength, onShortIdLengthUpdated, waitUntil, options }: IManagerProps): Promise<IShortLinksManager> {
@@ -241,6 +253,21 @@ export async function createManager({ backend, caches = [], shortIdLength, onSho
                     for (const shortId of shortIds) {
                         await cache.delete(shortId);
                     }
+                }
+            }
+        },
+
+        async removeShortLink(shortId: string) {
+            await backend.removeShortLink(shortId);
+
+            // Remove from all caches
+            for (const cache of caches) {
+                if (cache.delete) {
+                    if (!cache.initialised) {
+                        await cache.init?.();
+                        cache.initialised = true;
+                    }
+                    await cache.delete(shortId);
                 }
             }
         },

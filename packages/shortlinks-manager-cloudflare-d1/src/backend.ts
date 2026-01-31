@@ -12,6 +12,7 @@ export function createD1Backend(db: D1Database): IShortLinksManagerD1Backend {
     let stmt_createShortLinkMap: D1PreparedStatement | null = null;
     let stmt_updateShortLinkLastAccessed: D1PreparedStatement | null = null;
     let stmt_cleanUnusedLinks: D1PreparedStatement | null = null;
+    let stmt_removeShortLink: D1PreparedStatement | null = null;
 
     return {
         async setupTables() {
@@ -81,6 +82,14 @@ PRAGMA optimize;
             const result = await stmt_cleanUnusedLinks.bind(`-${maxAge} days`).all<{ short_id: string }>();
 
             return result.results.map(r => r.short_id);
+        },
+
+        async removeShortLink(shortId: string): Promise<void> {
+            if (!stmt_removeShortLink) {
+                stmt_removeShortLink = db.prepare("DELETE FROM sl_links_map WHERE short_id = ?");
+            }
+
+            await stmt_removeShortLink.bind(shortId).run();
         },
     };
 }
