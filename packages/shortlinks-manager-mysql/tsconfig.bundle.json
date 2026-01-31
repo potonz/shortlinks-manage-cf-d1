@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.bundle.json",
+  "compilerOptions": {
+    "baseUrl": "."
+  }
+}

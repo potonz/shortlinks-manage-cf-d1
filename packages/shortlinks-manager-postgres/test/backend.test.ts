@@ -5,17 +5,14 @@ import { createPostgresBackend, type IShortLinksManagerPostgresBackend } from "s
 
 const connectionUri = process.env.POSTGRES_URI;
 
-// Skip all tests if no Postgres URI is provided
-const describe = connectionUri ? test : test.skip;
+if (!connectionUri) {
+    throw new Error("POSTGRES_URI environment variable is required to run tests");
+}
 
 let sql: postgres.Sql;
 let backend: IShortLinksManagerPostgresBackend;
 
 beforeAll(async () => {
-    if (!connectionUri) {
-        return;
-    }
-
     sql = postgres(connectionUri);
     backend = createPostgresBackend(connectionUri);
     await backend.init?.();
@@ -28,13 +25,13 @@ afterAll(async () => {
     }
 });
 
-describe("create a short link", async () => {
+test("create a short link", async () => {
     const expected = ["aB0", "https://poto.nz"] as const;
 
     expect(backend.createShortLink(expected[0], expected[1])).resolves.toBeUndefined();
 });
 
-describe("get url by short id", async () => {
+test("get url by short id", async () => {
     const shortId = "abCD90";
     const expected = "https://poto.nz";
 
@@ -48,7 +45,7 @@ describe("get url by short id", async () => {
     expect(url).resolves.toStrictEqual(expected);
 });
 
-describe("get unused short links", async () => {
+test("get unused short links", async () => {
     const expectedRemoved = "abc";
     const expectedExist = "def";
 
@@ -67,11 +64,11 @@ describe("get unused short links", async () => {
     expect(existUrl).resolves.not.toBeNull();
 });
 
-describe("get non-existing short id", async () => {
+test("get non-existing short id", async () => {
     expect(backend.getTargetUrl("does-not-exist")).resolves.toBeNull();
 });
 
-describe("check if short ids exist", async () => {
+test("check if short ids exist", async () => {
     const existingIds = ["existing1", "existing2"];
     const nonExistingIds = ["nonexisting1", "nonexisting2"];
 
@@ -88,7 +85,7 @@ describe("check if short ids exist", async () => {
     expect(result).toEqual(existingIds);
 });
 
-describe("update short link last access time", async () => {
+test("update short link last access time", async () => {
     const shortId = "accessTest";
     const targetUrl = "https://poto.nz";
 
@@ -122,7 +119,7 @@ describe("update short link last access time", async () => {
     expect(updatedResult[0].last_accessed_at).not.toEqual(initialResult[0].last_accessed_at);
 });
 
-describe("remove existing short link", async () => {
+test("remove existing short link", async () => {
     const shortId = "removeTest";
     const targetUrl = "https://poto.nz";
 
@@ -144,7 +141,7 @@ describe("remove existing short link", async () => {
     expect(afterResult).toBeNull();
 });
 
-describe("remove non-existent short link should not throw error", async () => {
+test("remove non-existent short link should not throw error", async () => {
     // Attempt to remove a short link that doesn't exist
     expect(backend.removeShortLink("non-existent-id")).resolves.toBeUndefined();
 });

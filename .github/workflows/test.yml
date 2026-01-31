@@ -94,3 +94,51 @@ jobs:
         env:
           CI: true
           POSTGRES_URI: postgres://postgres:password@localhost:5432/shortlinks
+
+  test-mysql:
+    name: Test MySQL Package (${{ matrix.mysql-variant }} ${{ matrix.mysql-version }})
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mysql-variant: mysql
+            mysql-version: "8.0"
+          - mysql-variant: mariadb
+            mysql-version: "10.11"
+          - mysql-variant: mariadb
+            mysql-version: "11.4"
+
+    services:
+      mysql:
+        image: ${{ matrix.mysql-variant }}:${{ matrix.mysql-version }}
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: shortlinks
+        options: >-
+          --health-cmd "${{ matrix.mysql-variant == 'mysql' && 'mysqladmin ping' || 'healthcheck.sh --connect --innodb_initialized' }}"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 3306:3306
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun ci
+
+      - name: Run MySQL package tests
+        run: bun test packages/shortlinks-manager-mysql
+        env:
+          CI: true
+          MYSQL_URI: mysql://root:password@localhost:3306/shortlinks
