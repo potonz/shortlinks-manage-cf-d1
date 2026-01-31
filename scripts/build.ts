@@ -84,3 +84,4 @@ async function buildPackage(name: string) {
 
 await buildPackage("shortlinks-manager");
 await buildPackage("shortlinks-manager-cloudflare-d1");
+await buildPackage("shortlinks-manager-postgres");

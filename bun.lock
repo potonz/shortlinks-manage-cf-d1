@@ -22,14 +22,14 @@
     },
     "packages/shortlinks-manager": {
       "name": "@potonz/shortlinks-manager",
-      "version": "0.1.1",
+      "version": "0.2.3",
       "devDependencies": {
         "date-fns": "catalog:",
       },
     },
     "packages/shortlinks-manager-cloudflare-d1": {
       "name": "@potonz/shortlinks-manager-cf-d1",
-      "version": "0.1.1",
+      "version": "0.2.3",
       "dependencies": {
         "@potonz/shortlinks-manager": "workspace:*",
       },
@@ -37,6 +37,17 @@
         "date-fns": "catalog:",
         "miniflare": "^4.20251217.0",
         "wrangler": "^4.54.0",
+      },
+    },
+    "packages/shortlinks-manager-postgres": {
+      "name": "@potonz/shortlinks-manager-postgres",
+      "version": "0.1.0",
+      "dependencies": {
+        "@potonz/shortlinks-manager": "workspace:*",
+        "postgres": "^3.4.5",
+      },
+      "devDependencies": {
+        "date-fns": "catalog:",
       },
     },
   },
@@ -215,6 +226,8 @@
     "@potonz/shortlinks-manager": ["@potonz/shortlinks-manager@workspace:packages/shortlinks-manager"],
 
     "@potonz/shortlinks-manager-cf-d1": ["@potonz/shortlinks-manager-cf-d1@workspace:packages/shortlinks-manager-cloudflare-d1"],
+
+    "@potonz/shortlinks-manager-postgres": ["@potonz/shortlinks-manager-postgres@workspace:packages/shortlinks-manager-postgres"],
 
     "@sindresorhus/is": ["@sindresorhus/is@7.1.1", "", {}, "sha512-rO92VvpgMc3kfiTjGT52LEtJ8Yc5kCWhZjLQ3LwlA4pSgPpQO7bVpYXParOD8Jwf+cVQECJo3yP/4I8aZtUQTQ=="],
 
@@ -427,6 +440,8 @@
     "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
 
     "picomatch": ["picomatch@4.0.3", "", {}, "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q=="],
+
+    "postgres": ["postgres@3.4.8", "", {}, "sha512-d+JFcLM17njZaOLkv6SCev7uoLaBtfK86vMUXhW1Z4glPWh4jozno9APvW/XKFJ3CCxVoC7OL38BqRydtu5nGg=="],
 
     "prelude-ls": ["prelude-ls@1.2.1", "", {}, "sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g=="],
 
