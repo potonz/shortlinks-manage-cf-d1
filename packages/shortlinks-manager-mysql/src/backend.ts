@@ -57,7 +57,7 @@ export function createMysqlBackend(connection: string | IConnectionConfig): ISho
                 `);
 
                 await connection.execute(`
-                    CREATE INDEX IF NOT EXISTS idx_sl_links_map_last_accessed_at 
+                    CREATE INDEX idx_sl_links_map_last_accessed_at
                     ON sl_links_map(last_accessed_at)
                 `);
             }

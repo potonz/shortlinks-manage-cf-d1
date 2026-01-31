@@ -57,7 +57,7 @@ test("get unused short links", async () => {
         "INSERT INTO sl_links_map (short_id, target_url, last_accessed_at) VALUES (?, ?, ?), (?, ?, ?)",
         [
             expectedExist, "https://poto.nz", lightFormat(new Date(), "yyyy-MM-dd HH:mm:ss"),
-            expectedRemoved, "https://poto.nz", "1970-01-01 00:00:00",
+            expectedRemoved, "https://poto.nz", "1970-01-01 00:00:01",
         ],
     );
 
