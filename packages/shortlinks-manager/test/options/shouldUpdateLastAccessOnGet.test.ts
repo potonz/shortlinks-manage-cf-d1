@@ -1,5 +1,5 @@
 import { beforeEach, expect, mock, setSystemTime, test } from "bun:test";
-import { createManager, type IShortLinksManagerBackend } from "src";
+import { createManager, type IBaseUrlRecord, type IShortLinksManagerBackend } from "src";
 
 mock.module("src/utils", () => ({
     generateUniqueShortIds: (count: number, length: number) => {
@@ -12,55 +12,101 @@ mock.module("src/utils", () => ({
     },
 }));
 
-let map: Map<string, { targetUrl: string; lastAccessedAt: Date }>;
-let dummyBackend: IShortLinksManagerBackend & { map: Map<string, { targetUrl: string; lastAccessedAt: Date }> };
+const BASE_URL_ID = 1;
+
+type DummyStorage = Map<number | null, Map<string, { targetUrl: string; lastAccessedAt: Date }>>;
+
+let map: DummyStorage;
+let dummyBackend: IShortLinksManagerBackend & { map: DummyStorage };
 
 let shortIdLength = 3;
 
 beforeEach(async () => {
-    map = new Map<string, { targetUrl: string; lastAccessedAt: Date }>();
+    map = new Map();
 
     dummyBackend = {
         map,
-        getTargetUrl(shortId: string): string | null {
-            const value = map.get(shortId);
+        getTargetUrl(shortId: string, baseUrlId: number | null): string | null {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            const value = baseMap.get(shortId);
             return value?.targetUrl ?? null;
         },
-        createShortLink(shortId: string, targetUrl: string): void {
-            if (map.has(shortId)) {
+        createShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): void {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            if (baseMap.has(shortId)) {
                 throw new Error("short id not found");
             }
 
-            map.set(shortId, {
+            baseMap.set(shortId, {
                 targetUrl,
                 lastAccessedAt: new Date(),
             });
         },
-        checkShortIdsExist(shortIds: string[]): string[] {
-            return shortIds.filter(id => map.has(id));
+        checkShortIdsExist(shortIds: string[], baseUrlId: number | null): string[] {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            return shortIds.filter(id => baseMap.has(id));
         },
-        updateShortLinkLastAccessTime(shortId: string): void {
-            const value = map.get(shortId);
+        updateShortLinkLastAccessTime(shortId: string, baseUrlId: number | null): void {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            const value = baseMap.get(shortId);
             if (value) {
                 value.lastAccessedAt = new Date();
             }
         },
-        cleanUnusedLinks(maxAge: number): string[] {
-            // Delete entries older than maxAge days
+        cleanUnusedLinks(maxAge: number): Array<{ shortId: string; baseUrlId: number | null }> {
+            const deletedLinks: Array<{ shortId: string; baseUrlId: number | null }> = [];
             const now = new Date();
             const cutoffDate = new Date(now);
             cutoffDate.setDate(now.getDate() - maxAge);
 
-            const deletedShortIds = [];
-
-            for (const [shortId, data] of map.entries()) {
-                if (data.lastAccessedAt < cutoffDate) {
-                    map.delete(shortId);
-                    deletedShortIds.push(shortId);
+            for (const [baseUrlId, baseMap] of map.entries()) {
+                for (const [shortId, data] of baseMap.entries()) {
+                    if (data.lastAccessedAt < cutoffDate) {
+                        baseMap.delete(shortId);
+                        deletedLinks.push({ shortId, baseUrlId });
+                    }
                 }
             }
 
-            return deletedShortIds;
+            return deletedLinks;
+        },
+        removeShortLink(shortId: string, baseUrlId: number | null): void {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            baseMap.delete(shortId);
+        },
+        baseUrl: {
+            async add() {
+                throw new Error("Function not implemented.");
+            },
+            remove: function (): void | Promise<void> {
+                throw new Error("Function not implemented.");
+            },
+            list: function (): IBaseUrlRecord[] | Promise<IBaseUrlRecord[]> {
+                throw new Error("Function not implemented.");
+            },
+            getId: function (): number | Promise<number> {
+                return BASE_URL_ID;
+            },
         },
     };
 });
@@ -79,19 +125,19 @@ test("shouldUpdateLastAccessOnGet: false should not update last access time", as
     });
 
     const url = "https://example.com/test";
-    const shortId = await managerWithoutUpdate.createShortLink(url);
+    const shortId = await managerWithoutUpdate.createShortLink(url, BASE_URL_ID);
 
     // Get the initial last accessed time
-    const initialLastAccessed = dummyBackend.map.get(shortId)!.lastAccessedAt;
+    const initialLastAccessed = dummyBackend.map.get(BASE_URL_ID)!.get(shortId)!.lastAccessedAt;
 
     // Access the URL
-    const result = await managerWithoutUpdate.getTargetUrl(shortId);
+    const result = await managerWithoutUpdate.getTargetUrl(shortId, BASE_URL_ID);
 
     // Verify the URL is returned correctly
     expect(result).toBe(url);
 
     // Verify that last accessed time was NOT updated
-    const finalLastAccessed = dummyBackend.map.get(shortId)!.lastAccessedAt;
+    const finalLastAccessed = dummyBackend.map.get(BASE_URL_ID)!.get(shortId)!.lastAccessedAt;
     expect(finalLastAccessed).toEqual(initialLastAccessed);
 });
 
@@ -109,10 +155,10 @@ test("shouldUpdateLastAccessOnGet: true should update last access time", async (
     });
 
     const url = "https://example.com/test";
-    const shortId = await managerWithUpdate.createShortLink(url);
+    const shortId = await managerWithUpdate.createShortLink(url, BASE_URL_ID);
 
     // Get the initial last accessed time
-    const initialLastAccessed = dummyBackend.map.get(shortId)!.lastAccessedAt;
+    const initialLastAccessed = dummyBackend.map.get(BASE_URL_ID)!.get(shortId)!.lastAccessedAt;
 
     // Mock the current time to be in the future
     const futureDate = new Date();
@@ -120,13 +166,13 @@ test("shouldUpdateLastAccessOnGet: true should update last access time", async (
     setSystemTime(futureDate);
 
     // Access the URL
-    const result = await managerWithUpdate.getTargetUrl(shortId);
+    const result = await managerWithUpdate.getTargetUrl(shortId, BASE_URL_ID);
 
     // Verify the URL is returned correctly
     expect(result).toBe(url);
 
     // Verify that last accessed time WAS updated
-    const finalLastAccessed = dummyBackend.map.get(shortId)!.lastAccessedAt;
+    const finalLastAccessed = dummyBackend.map.get(BASE_URL_ID)!.get(shortId)!.lastAccessedAt;
     expect(finalLastAccessed).not.toEqual(initialLastAccessed);
 
     // Reset the mock date
@@ -147,10 +193,10 @@ test("shouldUpdateLastAccessOnGet: undefined should default to true and update l
     });
 
     const url = "https://example.com/test";
-    const shortId = await managerWithDefault.createShortLink(url);
+    const shortId = await managerWithDefault.createShortLink(url, BASE_URL_ID);
 
     // Get the initial last accessed time
-    const initialLastAccessed = dummyBackend.map.get(shortId)!.lastAccessedAt;
+    const initialLastAccessed = dummyBackend.map.get(BASE_URL_ID)!.get(shortId)!.lastAccessedAt;
 
     // Mock the current time to be in the future
     const futureDate = new Date();
@@ -158,13 +204,13 @@ test("shouldUpdateLastAccessOnGet: undefined should default to true and update l
     setSystemTime(futureDate);
 
     // Access the URL
-    const result = await managerWithDefault.getTargetUrl(shortId);
+    const result = await managerWithDefault.getTargetUrl(shortId, BASE_URL_ID);
 
     // Verify the URL is returned correctly
     expect(result).toBe(url);
 
     // Verify that last accessed time WAS updated (default behavior)
-    const finalLastAccessed = dummyBackend.map.get(shortId)!.lastAccessedAt;
+    const finalLastAccessed = dummyBackend.map.get(BASE_URL_ID)!.get(shortId)!.lastAccessedAt;
     expect(finalLastAccessed).not.toEqual(initialLastAccessed);
 
     // Reset the mock date
