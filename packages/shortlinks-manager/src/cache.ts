@@ -17,5 +17,5 @@ export interface ICache {
      * Delete the short ID in the cache
      * @param shortId
      */
-    delete?: (shortId: string) => (void | Promise<void>);
+    delete: (shortId: string) => (void | Promise<void>);
 }
