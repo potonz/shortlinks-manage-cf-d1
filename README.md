@@ -102,6 +102,30 @@ bun add @potonz/shortlinks-manager-cf-d1
 bun add @potonz/shortlinks-manager-postgres
 ```
 
+## 📪 Database Structure
+
+The shortlinks-manager uses a single table `sl_links_map` to store short link mappings. This structure is designed to be compatible with most SQL databases.
+
+### Table: `sl_links_map`
+
+| Column | Type | Constraint | Description |
+|--------|------|------------|-------------|
+| `short_id` | VARCHAR(255) | NOT NULL, PRIMARY KEY | Unique identifier for the short link |
+| `target_url` | VARCHAR(65535) | NOT NULL | The target URL to redirect to |
+| `last_accessed_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Timestamp of the last access |
+| `created_at` | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Timestamp when the link was created |
+
+### Indexes
+
+| Name | Columns | Purpose |
+|------|---------|---------|
+| `idx_sl_links_map_last_accessed_at` | `last_accessed_at` | Optimizes queries for cleaning unused links |
+
+**Notes:**
+- `VARCHAR(65535)` is used for the target URL to allow long URLs (adjust based on your DBMS limitations)
+- `TIMESTAMP` or `DATETIME` type may vary by database; use the appropriate type for your DBMS
+- The index on `last_accessed_at` optimizes the cleanup of unused links based on age
+
 ## 🏗️ Development
 
 ### Commands

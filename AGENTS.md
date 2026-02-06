@@ -17,7 +17,9 @@ Always run `bun run lint` after making changes.
 
 Monorepo with Bun workspaces:
 - `packages/shortlinks-manager/` - Core package (no dependencies)
-- `packages/shortlinks-manager-cloudflare-d1/` - Cloudflare D1 extension
+- `packages/shortlinks-manager-cloudflare-d1/` - Cloudflare D1 database backend (SQLite)
+- `packages/shortlinks-manager-mysql/` - MySQL database backend
+- `packages/shortlinks-manager-postgres/` - Postgres database backend
 - Tests in `packages/*/test/` using Bun's test runner
 
 ## Code Style
@@ -26,7 +28,7 @@ Monorepo with Bun workspaces:
 - Indentation: 4 spaces
 - Semicolons: Required
 - Quotes: Double quotes
-- Max line length: Follow ESLint defaults
+- Max line length: None
 
 ### TypeScript
 - Strict mode enabled (tsconfig.json)
