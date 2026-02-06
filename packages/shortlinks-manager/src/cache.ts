@@ -3,19 +3,19 @@ export interface ICache {
     init?: () => (unknown | Promise<unknown>);
     /**
      * Get the target URL using the provided shortId
-     * @param shortId
+     * @param key
      * @returns string if a target URL is found, null otherwise
      */
-    get: (shortId: string) => (string | null | Promise<string | null>);
+    get: (key: string) => (string | null | Promise<string | null>);
     /**
      * Cache the target URL
-     * @param shortId
+     * @param key
      * @param targetUrl
      */
-    set: (shortId: string, targetUrl: string) => (void | Promise<void>);
+    set: (key: string, targetUrl: string) => (void | Promise<void>);
     /**
      * Delete the short ID in the cache
-     * @param shortId
+     * @param key
      */
-    delete: (shortId: string) => (void | Promise<void>);
+    delete: (key: string) => (void | Promise<void>);
 }

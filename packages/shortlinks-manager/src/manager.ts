@@ -85,7 +85,7 @@ export interface IShortLinksManager {
     removeShortLink(shortId: string, baseUrlId: number | null): Promise<void>;
 }
 
-function normalizeCacheKey(baseUrlId: number | null, shortId: string): string {
+export function normalizeCacheKey(baseUrlId: number | null, shortId: string): string {
     const normalizedBase = baseUrlId ?? "any";
     return `${normalizedBase}__${shortId}`;
 };
@@ -216,17 +216,17 @@ export async function createManager({ backend, caches = [], shortIdLength, onSho
         },
 
         async cleanUnusedLinks(maxAge) {
-            const shortIds = await backend.cleanUnusedLinks(maxAge);
+            const cleanedLinks = await backend.cleanUnusedLinks(maxAge);
 
-            // Remove from all caches
             for (const cache of caches) {
                 if (!cache.initialised) {
                     await cache.init?.();
                     cache.initialised = true;
                 }
 
-                for (const shortId of shortIds) {
-                    await cache.delete(shortId);
+                for (const { shortId, baseUrlId } of cleanedLinks) {
+                    const cacheKey = normalizeCacheKey(baseUrlId, shortId);
+                    await cache.delete(cacheKey);
                 }
             }
         },
@@ -234,13 +234,13 @@ export async function createManager({ backend, caches = [], shortIdLength, onSho
         async removeShortLink(shortId, baseUrlId) {
             await backend.removeShortLink(shortId, baseUrlId);
 
-            // Remove from all caches
             for (const cache of caches) {
                 if (!cache.initialised) {
                     await cache.init?.();
                     cache.initialised = true;
                 }
-                await cache.delete(shortId);
+                const cacheKey = normalizeCacheKey(baseUrlId, shortId);
+                await cache.delete(cacheKey);
             }
         },
     };

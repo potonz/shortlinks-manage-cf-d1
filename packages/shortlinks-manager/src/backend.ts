@@ -38,11 +38,11 @@ export interface IShortLinksManagerBackend {
       */
     updateShortLinkLastAccessTime(shortId: string, baseUrlId: number | null, time?: number | Date): void | Promise<void>;
     /**
-      * Remove unused links that are older than the given maxAge
-      * @param maxAge number of days the record should be kept
-      * @returns an array of short IDs that have been cleaned
-      */
-    cleanUnusedLinks(maxAge: number): string[] | Promise<string[]>;
+       * Remove unused links that are older than the given maxAge
+       * @param maxAge number of days the record should be kept
+       * @returns an array of objects with shortId and baseUrlId that have been cleaned
+       */
+    cleanUnusedLinks(maxAge: number): Array<{ shortId: string; baseUrlId: number | null }> | Promise<Array<{ shortId: string; baseUrlId: number | null }>>;
     /**
       * Remove a short link by its ID
       * @param shortId the short ID to remove

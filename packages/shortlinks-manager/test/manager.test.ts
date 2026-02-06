@@ -1,5 +1,5 @@
 import { beforeEach, expect, mock, test } from "bun:test";
-import { createManager, type IShortLinksManager, type IShortLinksManagerBackend } from "src";
+import { createManager, type IBaseUrlRecord, type IShortLinksManager, type IShortLinksManagerBackend, normalizeCacheKey } from "src";
 
 mock.module("src/utils", () => ({
     generateUniqueShortIds: (count: number, length: number) => {
@@ -12,59 +12,98 @@ mock.module("src/utils", () => ({
     },
 }));
 
-let map: Map<string, { targetUrl: string; lastAccessedAt: Date }>;
-let dummyBackend: IShortLinksManagerBackend & { map: Map<string, { targetUrl: string; lastAccessedAt: Date }> };
+const BASE_URL_ID = 1;
+
+type DummyStorage = Map<number | null, Map<string, { targetUrl: string; lastAccessedAt: Date }>>;
+
+let map: DummyStorage;
+let dummyBackend: IShortLinksManagerBackend & { map: DummyStorage };
 
 let shortIdLength = 3;
 let manager: IShortLinksManager;
 
 beforeEach(async () => {
-    map = new Map<string, { targetUrl: string; lastAccessedAt: Date }>();
+    map = new Map();
 
     dummyBackend = {
         map,
-        getTargetUrl(shortId: string): string | null {
-            const value = map.get(shortId);
-            return value?.targetUrl ?? null;
-        },
-        createShortLink(shortId: string, targetUrl: string): void {
-            if (map.has(shortId)) {
-                throw new Error("short id not found");
+        getTargetUrl(shortId: string, baseUrlId: number | null): string | null {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
             }
 
-            map.set(shortId, {
+            const baseMap = map.get(baseUrlId)!;
+            const value = baseMap.get(shortId);
+            return value?.targetUrl ?? null;
+        },
+        createShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): void {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            baseMap.set(shortId, {
                 targetUrl,
                 lastAccessedAt: new Date(),
             });
         },
-        checkShortIdsExist(shortIds: string[]): string[] {
-            return shortIds.filter(id => map.has(id));
+        checkShortIdsExist(shortIds: string[], baseUrlId: number | null): string[] {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            return shortIds.filter(id => baseMap.has(id));
         },
-        updateShortLinkLastAccessTime(shortId: string): void {
-            const value = map.get(shortId);
+        updateShortLinkLastAccessTime(shortId: string, baseUrlId: number | null, time?: number | Date): void {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            const value = baseMap.get(shortId);
             if (value) {
-                value.lastAccessedAt = new Date();
+                value.lastAccessedAt = time instanceof Date ? time : new Date(time ?? Date.now());
             }
         },
-        cleanUnusedLinks(maxAge: number): string[] {
-            // Delete entries older than maxAge days
+        cleanUnusedLinks(maxAge: number): Array<{ shortId: string; baseUrlId: number | null }> {
+            const deletedLinks: Array<{ shortId: string; baseUrlId: number | null }> = [];
             const now = new Date();
             const cutoffDate = new Date(now);
             cutoffDate.setDate(now.getDate() - maxAge);
 
-            const deletedShortIds = [];
-
-            for (const [shortId, data] of map.entries()) {
-                if (data.lastAccessedAt < cutoffDate) {
-                    map.delete(shortId);
-                    deletedShortIds.push(shortId);
+            for (const [baseUrlId, baseMap] of map.entries()) {
+                for (const [shortId, data] of baseMap.entries()) {
+                    if (data.lastAccessedAt < cutoffDate) {
+                        baseMap.delete(shortId);
+                        deletedLinks.push({ shortId, baseUrlId });
+                    }
                 }
             }
 
-            return deletedShortIds;
+            return deletedLinks;
         },
-        removeShortLink(shortId: string): void {
-            map.delete(shortId);
+        removeShortLink(shortId: string, baseUrlId: number | null): void {
+            if (!map.has(baseUrlId)) {
+                map.set(baseUrlId, new Map());
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            baseMap.delete(shortId);
+        },
+        baseUrl: {
+            async add() {
+                throw new Error("Function not implemented.");
+            },
+            remove: function (): void | Promise<void> {
+                throw new Error("Function not implemented.");
+            },
+            list: function (): IBaseUrlRecord[] | Promise<IBaseUrlRecord[]> {
+                throw new Error("Function not implemented.");
+            },
+            getId: function (): number | Promise<number> {
+                return BASE_URL_ID;
+            },
         },
     };
 
@@ -81,23 +120,21 @@ test("createShortLink should generate unique short IDs", async () => {
     const url1 = "https://example.com/1";
     const url2 = "https://example.com/2";
 
-    const shortId1 = await manager.createShortLink(url1);
-    const shortId2 = await manager.createShortLink(url2);
+    const shortId1 = await manager.createShortLink(url1, BASE_URL_ID);
+    const shortId2 = await manager.createShortLink(url2, BASE_URL_ID);
 
     expect(shortId1).not.toBe(shortId2);
     expect(shortId1).toHaveLength(3);
     expect(shortId2).toHaveLength(3);
 
-    // Verify that the URLs can be retrieved
-    expect(manager.getTargetUrl(shortId1)).resolves.toBe(url1);
-    expect(manager.getTargetUrl(shortId2)).resolves.toBe(url2);
+    expect(manager.getTargetUrl(shortId1, BASE_URL_ID)).resolves.toBe(url1);
+    expect(manager.getTargetUrl(shortId2, BASE_URL_ID)).resolves.toBe(url2);
 });
 
 test("createShortLink should handle ID collisions by increasing length", async () => {
     const collidingLength = 3;
     let testShortIdLength = collidingLength;
 
-    // Mock backend to simulate all generated IDs already exist
     const collisionBackend = {
         getTargetUrl: dummyBackend.getTargetUrl,
         createShortLink: dummyBackend.createShortLink,
@@ -112,10 +149,10 @@ test("createShortLink should handle ID collisions by increasing length", async (
         updateShortLinkLastAccessTime: dummyBackend.updateShortLinkLastAccessTime,
         cleanUnusedLinks: dummyBackend.cleanUnusedLinks,
         removeShortLink: dummyBackend.removeShortLink,
+        baseUrl: dummyBackend.baseUrl,
         init: dummyBackend.init,
     };
 
-    // Reset shortIdLength for this test
     const testManager = await createManager({
         backend: collisionBackend,
         shortIdLength: testShortIdLength,
@@ -125,75 +162,64 @@ test("createShortLink should handle ID collisions by increasing length", async (
     });
 
     const url = "https://example.com/collision-test";
-    const shortId = await testManager.createShortLink(url);
+    const shortId = await testManager.createShortLink(url, BASE_URL_ID);
 
-    // Should have increased length due to collisions
     expect(testShortIdLength).toBeGreaterThan(3);
     expect(shortId).toHaveLength(testShortIdLength);
-    expect(testManager.getTargetUrl(shortId)).resolves.toBe(url);
+    expect(testManager.getTargetUrl(shortId, BASE_URL_ID)).resolves.toBe(url);
 });
 
 test("getTargetUrl should return null for non-existent short IDs", async () => {
-    const result = await manager.getTargetUrl("nonexistent");
+    const result = await manager.getTargetUrl("nonexistent", BASE_URL_ID);
     expect(result).toBeNull();
 });
 
 test("getTargetUrl should return target URL for existing short IDs", async () => {
     const url = "https://example.com/test";
-    const shortId = await manager.createShortLink(url);
+    const shortId = await manager.createShortLink(url, BASE_URL_ID);
 
-    const result = await manager.getTargetUrl(shortId);
+    const result = await manager.getTargetUrl(shortId, BASE_URL_ID);
     expect(result).toBe(url);
 });
 
 test("cleanUnusedLinks should remove entries older than maxAge", async () => {
-    // Create some test entries
     const url1 = "https://example.com/old";
     const url2 = "https://example.com/new";
 
-    const shortId1 = await manager.createShortLink(url1);
-    const shortId2 = await manager.createShortLink(url2);
+    const shortId1 = await manager.createShortLink(url1, BASE_URL_ID);
+    const shortId2 = await manager.createShortLink(url2, BASE_URL_ID);
 
-    // Verify both entries exist
-    expect(manager.getTargetUrl(shortId1)).resolves.toBe(url1);
-    expect(manager.getTargetUrl(shortId2)).resolves.toBe(url2);
+    expect(manager.getTargetUrl(shortId1, BASE_URL_ID)).resolves.toBe(url1);
+    expect(manager.getTargetUrl(shortId2, BASE_URL_ID)).resolves.toBe(url2);
 
-    // Manually set the last accessed time for shortId1 to be old (35 days ago)
     const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 35); // 35 days ago
+    oldDate.setDate(oldDate.getDate() - 35);
 
-    // Update the lastAccessedAt timestamp for the first entry
-    dummyBackend.map.get(shortId1)!.lastAccessedAt = oldDate;
+    dummyBackend.map.get(BASE_URL_ID)!.get(shortId1)!.lastAccessedAt = oldDate;
 
-    // Call cleanUnusedLinks with maxAge of 30 days
     await manager.cleanUnusedLinks(30);
 
-    // shortId1 should be removed (older than 30 days)
-    expect(manager.getTargetUrl(shortId1)).resolves.toBeNull();
-
-    // shortId2 should still exist (newer than 30 days)
-    expect(manager.getTargetUrl(shortId2)).resolves.toBe(url2);
+    expect(manager.getTargetUrl(shortId1, BASE_URL_ID)).resolves.toBeNull();
+    expect(manager.getTargetUrl(shortId2, BASE_URL_ID)).resolves.toBe(url2);
 });
 
 test("cleanUnusedLinks should remove entries from caches as well", async () => {
-    // Create a simple in-memory cache for testing
     class InMemoryCache {
         private cache: Map<string, string> = new Map();
 
-        get(shortId: string): string | null {
-            return this.cache.get(shortId) || null;
+        get(key: string): string | null {
+            return this.cache.get(key) || null;
         }
 
-        set(shortId: string, targetUrl: string): void {
-            this.cache.set(shortId, targetUrl);
+        set(key: string, targetUrl: string): void {
+            this.cache.set(key, targetUrl);
         }
 
-        delete(shortId: string) {
-            this.cache.delete(shortId);
+        delete(key: string) {
+            this.cache.delete(key);
         }
     }
 
-    // Set up manager with cache
     const dummyCache = new InMemoryCache();
     const cacheManager = await createManager({
         backend: dummyBackend,
@@ -204,78 +230,66 @@ test("cleanUnusedLinks should remove entries from caches as well", async () => {
         },
     });
 
-    // Create some test entries
     const url1 = "https://example.com/old";
     const url2 = "https://example.com/new";
 
-    const shortId1 = await cacheManager.createShortLink(url1);
-    const shortId2 = await cacheManager.createShortLink(url2);
+    const shortId1 = await cacheManager.createShortLink(url1, BASE_URL_ID);
+    const shortId2 = await cacheManager.createShortLink(url2, BASE_URL_ID);
 
-    // Verify both entries exist and are cached
-    expect(cacheManager.getTargetUrl(shortId1)).resolves.toBe(url1);
-    expect(cacheManager.getTargetUrl(shortId2)).resolves.toBe(url2);
+    expect(cacheManager.getTargetUrl(shortId1, BASE_URL_ID)).resolves.toBe(url1);
+    expect(cacheManager.getTargetUrl(shortId2, BASE_URL_ID)).resolves.toBe(url2);
 
-    // Verify cache has entries
-    expect(dummyCache.get(shortId1)).toBe(url1);
-    expect(dummyCache.get(shortId2)).toBe(url2);
+    const cacheKey1 = normalizeCacheKey(BASE_URL_ID, shortId1);
+    const cacheKey2 = normalizeCacheKey(BASE_URL_ID, shortId2);
+    expect(dummyCache.get(cacheKey1)).toBe(url1);
+    expect(dummyCache.get(cacheKey2)).toBe(url2);
 
-    // Manually set the last accessed time for shortId1 to be old (35 days ago)
     const oldDate = new Date();
-    oldDate.setDate(oldDate.getDate() - 35); // 35 days ago
+    oldDate.setDate(oldDate.getDate() - 35);
 
-    // Update the lastAccessedAt timestamp for the first entry
-    dummyBackend.map.get(shortId1)!.lastAccessedAt = oldDate;
+    dummyBackend.map.get(BASE_URL_ID)!.get(shortId1)!.lastAccessedAt = oldDate;
 
-    // Call cleanUnusedLinks with maxAge of 30 days
     await cacheManager.cleanUnusedLinks(30);
 
-    // shortId1 should be removed from both backend and cache
-    expect(cacheManager.getTargetUrl(shortId1)).resolves.toBeNull();
-    expect(dummyCache.get(shortId1)).toBeNull();
+    expect(cacheManager.getTargetUrl(shortId1, BASE_URL_ID)).resolves.toBeNull();
+    expect(dummyCache.get(cacheKey1)).toBeNull();
 
-    // shortId2 should still exist in both backend and cache
-    expect(cacheManager.getTargetUrl(shortId2)).resolves.toBe(url2);
-    expect(dummyCache.get(shortId2)).toBe(url2);
+    expect(cacheManager.getTargetUrl(shortId2, BASE_URL_ID)).resolves.toBe(url2);
+    expect(dummyCache.get(cacheKey2)).toBe(url2);
 });
 
 test("removeShortLink should remove an existing short link", async () => {
     const url = "https://example.com/remove-test";
-    const shortId = await manager.createShortLink(url);
+    const shortId = await manager.createShortLink(url, BASE_URL_ID);
 
-    // Verify the link exist
-    expect(manager.getTargetUrl(shortId)).resolves.toBe(url);
+    expect(manager.getTargetUrl(shortId, BASE_URL_ID)).resolves.toBe(url);
 
-    // Remove the short link
-    await manager.removeShortLink(shortId);
+    await manager.removeShortLink(shortId, BASE_URL_ID);
 
-    // Verify the link is removed
-    expect(manager.getTargetUrl(shortId)).resolves.toBeNull();
+    expect(manager.getTargetUrl(shortId, BASE_URL_ID)).resolves.toBeNull();
 });
 
 test("removeShortLink should not throw error when removing non-existent link", async () => {
-    // Should not throw error for non-existent shortId
-    expect(manager.removeShortLink("non-existent-id")).resolves.toBeUndefined();
+    expect(manager.removeShortLink("non-existent-id", BASE_URL_ID)).resolves.toBeUndefined();
 });
 
 test("removeShortLink should remove from caches as well", async () => {
-    // Create a simple in-memory cache for testing
     class InMemoryCache {
         private cache: Map<string, string> = new Map();
 
-        get(shortId: string): string | null {
-            return this.cache.get(shortId) || null;
+        get(cacheKey: string): string | null {
+            return this.cache.get(cacheKey) || null;
         }
 
-        set(shortId: string, targetUrl: string): void {
-            this.cache.set(shortId, targetUrl);
+        set(cacheKey: string, targetUrl: string): void {
+            this.cache.set(cacheKey, targetUrl);
         }
 
-        delete(shortId: string) {
-            this.cache.delete(shortId);
+        delete(cacheKey: string) {
+            this.cache.delete(cacheKey);
         }
     }
 
-    // Set up manager with cache
     const dummyCache = new InMemoryCache();
     const cacheManager = await createManager({
         backend: dummyBackend,
@@ -287,18 +301,14 @@ test("removeShortLink should remove from caches as well", async () => {
     });
 
     const url = "https://example.com/cached-remove-test";
-    const shortId = await cacheManager.createShortLink(url);
+    const shortId = await cacheManager.createShortLink(url, BASE_URL_ID);
 
-    // Populate cache
-    expect(cacheManager.getTargetUrl(shortId)).resolves.toBe(url);
-    expect(dummyCache.get(shortId)).toBe(url);
+    expect(cacheManager.getTargetUrl(shortId, BASE_URL_ID)).resolves.toBe(url);
+    const cacheKey = normalizeCacheKey(BASE_URL_ID, shortId);
+    expect(dummyCache.get(cacheKey)).toBe(url);
 
-    // Remove the short link
-    await cacheManager.removeShortLink(shortId);
+    await cacheManager.removeShortLink(shortId, BASE_URL_ID);
 
-    // Verify removed from backend
-    expect(cacheManager.getTargetUrl(shortId)).resolves.toBeNull();
-
-    // Verify removed from cache
-    expect(dummyCache.get(shortId)).toBeNull();
+    expect(cacheManager.getTargetUrl(shortId, BASE_URL_ID)).resolves.toBeNull();
+    expect(dummyCache.get(cacheKey)).toBeNull();
 });
