@@ -147,7 +147,7 @@ export function createPostgresBackend(connectionUri: string): IShortLinksManager
 
             async remove(id: number): Promise<void> {
                 await sql`
-                    DELETE FROM sl_base_urls 
+                    UPDATE sl_base_urls SET is_active = FALSE
                     WHERE id = ${id}
                 `;
             },

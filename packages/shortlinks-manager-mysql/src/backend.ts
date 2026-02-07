@@ -232,7 +232,7 @@ export function createMysqlBackend(connection: string | IConnectionConfig): ISho
                 const connection = await mysql.createConnection(config);
                 try {
                     await connection.execute(
-                        "DELETE FROM sl_base_urls WHERE id = ?",
+                        "UPDATE sl_base_urls SET is_active = 0 WHERE id = ?",
                         [id],
                     );
                 }
