@@ -29,6 +29,7 @@ interface IBaseUrlRow extends mysql.RowDataPacket {
 }
 
 interface ICleanedLinkRow extends mysql.RowDataPacket {
+    id: number;
     short_id: string;
     base_url_id: number | null;
 }
@@ -185,15 +186,34 @@ export function createMysqlBackend(connection: string | IConnectionConfig): ISho
         async cleanUnusedLinks(maxAge: number): Promise<Array<{ shortId: string; baseUrlId: number | null }>> {
             const connection = await mysql.createConnection(config);
             try {
-                const [rows] = await connection.execute<ICleanedLinkRow[]>(
-                    "DELETE FROM sl_links_map WHERE last_accessed_at < DATE_SUB(NOW(), INTERVAL ? DAY) RETURNING short_id, base_url_id",
-                    [maxAge],
-                );
+                await connection.beginTransaction();
 
-                return rows.map(r => ({
-                    shortId: r.short_id,
-                    baseUrlId: r.base_url_id,
-                }));
+                try {
+                    const [rows] = await connection.execute<ICleanedLinkRow[]>(
+                        "SELECT id, short_id, base_url_id FROM sl_links_map WHERE last_accessed_at < DATE_SUB(NOW(), INTERVAL ? DAY) FOR UPDATE",
+                        [maxAge],
+                    );
+
+                    if (rows.length > 0) {
+                        const ids = rows.map(r => r.id);
+                        const placeholders = ids.map(() => "?").join(",");
+                        await connection.execute(
+                            `DELETE FROM sl_links_map WHERE id IN (${placeholders})`,
+                            ids,
+                        );
+                    }
+
+                    await connection.commit();
+
+                    return rows.map(r => ({
+                        shortId: r.short_id,
+                        baseUrlId: r.base_url_id,
+                    }));
+                }
+                catch (error) {
+                    await connection.rollback();
+                    throw error;
+                }
             }
             finally {
                 await connection.end();
