@@ -28,7 +28,7 @@ afterAll(async () => {
 test("create a short link", async () => {
     const expected = ["aB0", "https://poto.nz"] as const;
 
-    expect(backend.createShortLink(expected[0], expected[1])).resolves.toBeUndefined();
+    expect(backend.createShortLink(expected[0], expected[1], null)).resolves.toBeUndefined();
 });
 
 test("get url by short id", async () => {
@@ -36,11 +36,11 @@ test("get url by short id", async () => {
     const expected = "https://poto.nz";
 
     await sql`
-        INSERT INTO sl_links_map (short_id, target_url) 
-        VALUES (${shortId}, ${expected})
+        INSERT INTO sl_links_map (short_id, target_url, base_url_id) 
+        VALUES (${shortId}, ${expected}, NULL)
     `;
 
-    const url = backend.getTargetUrl(shortId);
+    const url = backend.getTargetUrl(shortId, null);
 
     expect(url).resolves.toStrictEqual(expected);
 });
@@ -50,22 +50,22 @@ test("get unused short links", async () => {
     const expectedExist = "def";
 
     await sql`
-        INSERT INTO sl_links_map (short_id, target_url, last_accessed_at) 
+        INSERT INTO sl_links_map (short_id, target_url, base_url_id, last_accessed_at) 
         VALUES 
-            (${expectedExist}, ${"https://poto.nz"}, ${lightFormat(new Date(), "yyyy-MM-dd HH:mm:ss")}),
-            (${expectedRemoved}, ${"https://poto.nz"}, ${"1970-01-01 00:00:00"})
+            (${expectedExist}, ${"https://poto.nz"}, NULL, ${lightFormat(new Date(), "yyyy-MM-dd HH:mm:ss")}),
+            (${expectedRemoved}, ${"https://poto.nz"}, NULL, ${"1970-01-01 00:00:00"})
     `;
 
     await backend.cleanUnusedLinks(1);
 
-    const removedUrl = backend.getTargetUrl(expectedRemoved);
+    const removedUrl = backend.getTargetUrl(expectedRemoved, null);
     expect(removedUrl).resolves.toBeNull();
-    const existUrl = backend.getTargetUrl(expectedExist);
+    const existUrl = backend.getTargetUrl(expectedExist, null);
     expect(existUrl).resolves.not.toBeNull();
 });
 
 test("get non-existing short id", async () => {
-    expect(backend.getTargetUrl("does-not-exist")).resolves.toBeNull();
+    expect(backend.getTargetUrl("does-not-exist", null)).resolves.toBeNull();
 });
 
 test("check if short ids exist", async () => {
@@ -74,12 +74,12 @@ test("check if short ids exist", async () => {
 
     // Insert some existing records
     await sql`
-        INSERT INTO sl_links_map (short_id, target_url) 
-        VALUES (${existingIds[0]}, ${"https://poto.nz"}), (${existingIds[1]}, ${"https://poto.nz"})
+        INSERT INTO sl_links_map (short_id, target_url, base_url_id) 
+        VALUES (${existingIds[0]}, ${"https://poto.nz"}, NULL), (${existingIds[1]}, ${"https://poto.nz"}, NULL)
     `;
 
     // Test checking for mix of existing and non-existing IDs
-    const result = await backend.checkShortIdsExist([...existingIds, ...nonExistingIds]);
+    const result = await backend.checkShortIdsExist([...existingIds, ...nonExistingIds], null);
 
     // Should only return the existing IDs
     expect(result).toEqual(existingIds);
@@ -91,25 +91,25 @@ test("update short link last access time", async () => {
 
     // Insert a record
     await sql`
-        INSERT INTO sl_links_map (short_id, target_url) 
-        VALUES (${shortId}, ${targetUrl})
+        INSERT INTO sl_links_map (short_id, target_url, base_url_id) 
+        VALUES (${shortId}, ${targetUrl}, NULL)
     `;
 
     // Get initial last_accessed_at value
     const initialResult = await sql<{ last_accessed_at: Date }[]>`
         SELECT last_accessed_at 
         FROM sl_links_map 
-        WHERE short_id = ${shortId}
+        WHERE short_id = ${shortId} AND base_url_id IS NULL
     `;
 
     // Update the last accessed time
-    await backend.updateShortLinkLastAccessTime(shortId, Date.now() + 1000);
+    await backend.updateShortLinkLastAccessTime(shortId, null, Date.now() + 1000);
 
     // Get the updated last_accessed_at value
     const updatedResult = await sql<{ last_accessed_at: Date }[]>`
         SELECT last_accessed_at 
         FROM sl_links_map 
-        WHERE short_id = ${shortId}
+        WHERE short_id = ${shortId} AND base_url_id IS NULL
     `;
 
     expect(initialResult[0]).not.toBeNull();
@@ -125,23 +125,23 @@ test("remove existing short link", async () => {
 
     // Insert a record
     await sql`
-        INSERT INTO sl_links_map (short_id, target_url) 
-        VALUES (${shortId}, ${targetUrl})
+        INSERT INTO sl_links_map (short_id, target_url, base_url_id) 
+        VALUES (${shortId}, ${targetUrl}, NULL)
     `;
 
     // Verify the record exists
-    const beforeResult = await backend.getTargetUrl(shortId);
+    const beforeResult = await backend.getTargetUrl(shortId, null);
     expect(beforeResult).toEqual(targetUrl);
 
     // Remove the short link
-    expect(backend.removeShortLink(shortId)).resolves.toBeUndefined();
+    expect(backend.removeShortLink(shortId, null)).resolves.toBeUndefined();
 
     // Verify the record no longer exists
-    const afterResult = await backend.getTargetUrl(shortId);
+    const afterResult = await backend.getTargetUrl(shortId, null);
     expect(afterResult).toBeNull();
 });
 
 test("remove non-existent short link should not throw error", async () => {
     // Attempt to remove a short link that doesn't exist
-    expect(backend.removeShortLink("non-existent-id")).resolves.toBeUndefined();
+    expect(backend.removeShortLink("non-existent-id", null)).resolves.toBeUndefined();
 });
