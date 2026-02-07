@@ -61,7 +61,7 @@ export function createMysqlBackend(connection: string | IConnectionConfig): ISho
                 await connection.execute(`
                     CREATE TABLE IF NOT EXISTS sl_base_urls (
                         id INT AUTO_INCREMENT PRIMARY KEY,
-                        base_url VARCHAR(2048) NOT NULL UNIQUE,
+                        base_url VARCHAR(255) NOT NULL UNIQUE,
                         is_active TINYINT(1) DEFAULT 1,
                         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     )

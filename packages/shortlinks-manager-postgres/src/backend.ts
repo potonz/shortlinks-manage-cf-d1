@@ -18,7 +18,7 @@ export function createPostgresBackend(connectionUri: string): IShortLinksManager
             await sql`
                 CREATE TABLE IF NOT EXISTS sl_base_urls (
                     id SERIAL PRIMARY KEY,
-                    base_url VARCHAR(2048) NOT NULL UNIQUE,
+                    base_url VARCHAR(255) NOT NULL UNIQUE,
                     is_active BOOLEAN DEFAULT TRUE,
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
