@@ -81,17 +81,17 @@ export function createMysqlBackend(connection: string | IConnectionConfig): ISho
                 `);
 
                 await connection.execute(`
-                    CREATE INDEX idx_sl_links_map_last_accessed_at
+                    CREATE INDEX IF NOT EXISTS idx_sl_links_map_last_accessed_at
                     ON sl_links_map(last_accessed_at)
                 `);
 
                 await connection.execute(`
-                    CREATE INDEX idx_sl_links_map_base_url_id
+                    CREATE INDEX IF NOT EXISTS idx_sl_links_map_base_url_id
                     ON sl_links_map(base_url_id)
                 `);
 
                 await connection.execute(`
-                    CREATE INDEX idx_sl_links_map_short_id_base_url
+                    CREATE INDEX IF NOT EXISTS idx_sl_links_map_short_id_base_url
                     ON sl_links_map(short_id, base_url_id)
                 `);
             }
