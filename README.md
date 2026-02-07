@@ -104,27 +104,49 @@ bun add @potonz/shortlinks-manager-postgres
 
 ## 📪 Database Structure
 
-The shortlinks-manager uses a single table `sl_links_map` to store short link mappings. This structure is designed to be compatible with most SQL databases.
+The shortlinks-manager uses two tables: `sl_base_urls` for managing base URL configurations and `sl_links_map` for storing short link mappings. This structure is designed to be compatible with most SQL databases.
 
-### Table: `sl_links_map`
+### Table: `sl_base_urls`
+
+Stores base URL configurations for multi-tenant scenarios.
 
 | Column | Type | Constraint | Description |
 |--------|------|------------|-------------|
-| `short_id` | VARCHAR(255) | NOT NULL, PRIMARY KEY | Unique identifier for the short link |
-| `target_url` | VARCHAR(65535) | NOT NULL | The target URL to redirect to |
-| `last_accessed_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Timestamp of the last access |
-| `created_at` | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Timestamp when the link was created |
+| `id` | INTEGER | PRIMARY KEY, AUTOINCREMENT | Unique identifier for the base URL |
+| `base_url` | VARCHAR(255) | NOT NULL, UNIQUE | The base URL (e.g., "https://example.com") |
+| `is_active` | INTEGER/BOOLEAN | DEFAULT 1 | Whether the base URL is active |
+| `created_at` | DATETIME/TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Timestamp when the record was created |
+
+### Table: `sl_links_map`
+
+Stores the short link mappings.
+
+| Column | Type | Constraint | Description |
+|--------|------|------------|-------------|
+| `id` | INTEGER | PRIMARY KEY, AUTOINCREMENT | Unique identifier for the link |
+| `short_id` | VARCHAR(255) | NOT NULL | Unique identifier for the short link |
+| `target_url` | VARCHAR(65535)/TEXT | NOT NULL | The target URL to redirect to |
+| `base_url_id` | INTEGER | NULL, FOREIGN KEY | References `sl_base_urls(id)` or NULL for default |
+| `last_accessed_at` | DATETIME/TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Timestamp of the last access |
+| `created_at` | DATETIME/TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Timestamp when the link was created |
+
+**Constraints:**
+- `UNIQUE (short_id, base_url_id)` - Ensures uniqueness within a base URL context
+- `FOREIGN KEY (base_url_id) REFERENCES sl_base_urls(id) ON DELETE SET NULL`
 
 ### Indexes
 
 | Name | Columns | Purpose |
 |------|---------|---------|
 | `idx_sl_links_map_last_accessed_at` | `last_accessed_at` | Optimizes queries for cleaning unused links |
+| `idx_sl_links_map_base_url_id` | `base_url_id` | Optimizes lookups by base URL |
+| `idx_sl_links_map_short_id_base_url` | `short_id, base_url_id` | Optimizes lookups by short ID and base URL |
 
 **Notes:**
 - `VARCHAR(65535)` is used for the target URL to allow long URLs (adjust based on your DBMS limitations)
 - `TIMESTAMP` or `DATETIME` type may vary by database; use the appropriate type for your DBMS
-- The index on `last_accessed_at` optimizes the cleanup of unused links based on age
+- The `base_url_id` can be NULL for links that don't belong to a specific base URL
+- The indexes optimize various query patterns including lookups and cleanup operations
 
 ## 🏗️ Development
 
