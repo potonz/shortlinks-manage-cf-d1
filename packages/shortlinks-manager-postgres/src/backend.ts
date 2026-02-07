@@ -26,12 +26,13 @@ export function createPostgresBackend(connectionUri: string): IShortLinksManager
 
             await sql`
                 CREATE TABLE IF NOT EXISTS sl_links_map (
+                    id SERIAL PRIMARY KEY,
                     short_id VARCHAR(255) NOT NULL,
                     target_url TEXT NOT NULL,
                     base_url_id INT NULL,
                     last_accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (short_id, base_url_id),
+                    CONSTRAINT uk_short_id_base_url UNIQUE (short_id, base_url_id),
                     FOREIGN KEY (base_url_id) REFERENCES sl_base_urls(id) ON DELETE SET NULL
                 )
             `;
