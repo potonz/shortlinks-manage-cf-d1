@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, test } from "bun:test";
 import { lightFormat } from "date-fns";
 import postgres from "postgres";
 import { createPostgresBackend, type IShortLinksManagerPostgresBackend } from "src";
@@ -12,15 +12,17 @@ if (!connectionUri) {
 let sql: postgres.Sql;
 let backend: IShortLinksManagerPostgresBackend;
 
-beforeAll(async () => {
+beforeEach(async () => {
     sql = postgres(connectionUri);
     backend = createPostgresBackend(connectionUri);
     await backend.init?.();
     await backend.setupTables();
 });
 
-afterAll(async () => {
+afterEach(async () => {
     if (sql) {
+        await sql`DROP TABLE IF EXISTS sl_links_map`;
+        await sql`DROP TABLE IF EXISTS sl_base_urls`;
         await sql.end();
     }
 });

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, test } from "bun:test";
 import { lightFormat } from "date-fns";
 import mysql from "mysql2/promise";
 import { createMysqlBackend, type IShortLinksManagerMysqlBackend } from "src";
@@ -16,15 +16,17 @@ if (!connectionUri) {
 let connection: mysql.Connection;
 let backend: IShortLinksManagerMysqlBackend;
 
-beforeAll(async () => {
+beforeEach(async () => {
     connection = await mysql.createConnection(connectionUri);
     backend = createMysqlBackend(connectionUri);
     await backend.init?.();
     await backend.setupTables();
 });
 
-afterAll(async () => {
+afterEach(async () => {
     if (connection) {
+        await connection.execute("DROP TABLE IF EXISTS sl_links_map");
+        await connection.execute("DROP TABLE IF EXISTS sl_base_urls");
         await connection.end();
     }
 });
