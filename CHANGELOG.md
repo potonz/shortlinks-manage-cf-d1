@@ -1,3 +1,9 @@
+## [0.3.0] - 2026-02-07
+
+### ⛰️  Features
+
+- [**breaking**] Add base url management (#12)
+
 ## [0.2.4] - 2026-01-31
 
 ### ⛰️  Features
