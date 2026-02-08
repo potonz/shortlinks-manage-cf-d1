@@ -147,3 +147,32 @@ test("remove non-existent short link should not throw error", async () => {
     // Attempt to remove a short link that doesn't exist
     expect(backend.removeShortLink("non-existent-id", null)).resolves.toBeUndefined();
 });
+
+test("update short link target url", async () => {
+    const shortId = "updateTest";
+    const originalUrl = "https://original.poto.nz";
+    const updatedUrl = "https://updated.poto.nz";
+
+    // Insert a record
+    await sql`
+        INSERT INTO sl_links_map (short_id, target_url, base_url_id) 
+        VALUES (${shortId}, ${originalUrl}, NULL)
+    `;
+
+    // Verify the record exists with original URL
+    const beforeResult = await backend.getTargetUrl(shortId, null);
+    expect(beforeResult).toEqual(originalUrl);
+
+    // Update the short link
+    const updateResult = await backend.updateShortLink(shortId, updatedUrl, null);
+    expect(updateResult).toBe(true);
+
+    // Verify the URL was updated
+    const afterResult = await backend.getTargetUrl(shortId, null);
+    expect(afterResult).toEqual(updatedUrl);
+});
+
+test("update non-existent short link should return false", async () => {
+    const result = await backend.updateShortLink("non-existent-id", "https://updated.poto.nz", null);
+    expect(result).toBe(false);
+});

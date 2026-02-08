@@ -83,6 +83,16 @@ export interface IShortLinksManager {
       * @throws Error if backend failed
       */
     removeShortLink(shortId: string, baseUrlId: number | null): Promise<void>;
+
+    /**
+      * Update the target URL for an existing short link
+      * @param shortId the short ID to update
+      * @param targetUrl the new target URL
+      * @param baseUrlId optional base URL ID to filter by
+      * @returns {Promise<boolean>} true if the link was updated, false if not found
+      * @throws Error if backend failed
+      */
+    updateShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): Promise<boolean>;
 }
 
 export function normalizeCacheKey(baseUrlId: number | null, shortId: string): string {
@@ -242,6 +252,23 @@ export async function createManager({ backend, caches = [], shortIdLength, onSho
                 const cacheKey = normalizeCacheKey(baseUrlId, shortId);
                 await cache.delete(cacheKey);
             }
+        },
+
+        async updateShortLink(shortId, targetUrl, baseUrlId) {
+            const updated = await backend.updateShortLink(shortId, targetUrl, baseUrlId);
+
+            if (updated) {
+                for (const cache of caches) {
+                    if (!cache.initialised) {
+                        await cache.init?.();
+                        cache.initialised = true;
+                    }
+                    const cacheKey = normalizeCacheKey(baseUrlId, shortId);
+                    await cache.delete(cacheKey);
+                }
+            }
+
+            return updated;
         },
     };
 }

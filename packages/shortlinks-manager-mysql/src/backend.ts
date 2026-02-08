@@ -235,6 +235,23 @@ export function createMysqlBackend(connection: string | IConnectionConfig): ISho
             }
         },
 
+        async updateShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): Promise<boolean> {
+            const connection = await mysql.createConnection(config);
+            try {
+                const query = baseUrlId === null
+                    ? "UPDATE sl_links_map SET target_url = ? WHERE short_id = ? AND base_url_id IS NULL"
+                    : "UPDATE sl_links_map SET target_url = ? WHERE short_id = ? AND base_url_id = ?";
+                const params = baseUrlId === null ? [targetUrl, shortId] : [targetUrl, shortId, baseUrlId];
+
+                const [result] = await connection.execute<mysql.ResultSetHeader>(query, params);
+
+                return result.affectedRows > 0;
+            }
+            finally {
+                await connection.end();
+            }
+        },
+
         baseUrl: {
             async add(baseUrl: string): Promise<void> {
                 const connection = await mysql.createConnection(config);

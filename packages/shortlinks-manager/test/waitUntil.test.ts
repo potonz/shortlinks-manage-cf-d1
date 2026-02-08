@@ -112,6 +112,20 @@ beforeEach(async () => {
             const baseMap = map.get(baseUrlId)!;
             baseMap.delete(shortId);
         },
+        updateShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): boolean {
+            if (!map.has(baseUrlId)) {
+                return false;
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            const value = baseMap.get(shortId);
+            if (!value) {
+                return false;
+            }
+
+            value.targetUrl = targetUrl;
+            return true;
+        },
         baseUrl: {
             async add() {
                 throw new Error("Function not implemented.");
@@ -162,6 +176,7 @@ test("should be called when updating short id length", async () => {
         updateShortLinkLastAccessTime: dummyBackend.updateShortLinkLastAccessTime,
         cleanUnusedLinks: dummyBackend.cleanUnusedLinks,
         removeShortLink: dummyBackend.removeShortLink,
+        updateShortLink: dummyBackend.updateShortLink,
         baseUrl: dummyBackend.baseUrl,
         init: dummyBackend.init,
     };
@@ -259,6 +274,7 @@ test("should not be called with synchronous onShortIdLengthUpdated", async () =>
         updateShortLinkLastAccessTime: dummyBackend.updateShortLinkLastAccessTime,
         cleanUnusedLinks: dummyBackend.cleanUnusedLinks,
         removeShortLink: dummyBackend.removeShortLink,
+        updateShortLink: dummyBackend.updateShortLink,
         baseUrl: dummyBackend.baseUrl,
         init: dummyBackend.init,
     };
