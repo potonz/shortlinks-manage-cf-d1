@@ -5,8 +5,8 @@
 - `bun run build` - Build all packages
 - `bun run release` - Run release script  
 - `bun run publish` - Publish packages
-- `bun run lint` - Run ESLint
-- `bun run lint:fix` - Run ESLint with auto-fix
+- `bun run lint` - Run ESLint with auto-fix
+- `bun run lint:check` - Run ESLint check only
 - `bun test` - Run all tests
 - `bun test path/to/file.test.ts` - Run single test file
 - `bun run cf-typegen` - Generate Cloudflare types (cf-d1 package)
