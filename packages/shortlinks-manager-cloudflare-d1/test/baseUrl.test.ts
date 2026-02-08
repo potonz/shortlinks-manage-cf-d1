@@ -204,6 +204,60 @@ test("updateShortLinkLastAccessTime with base URL", async () => {
     expect(updatedResult!.last_accessed_at).not.toEqual(initialResult!.last_accessed_at);
 });
 
+test("update short link target url with base URL", async () => {
+    const baseUrl = "https://example.com";
+    const shortId = "updateTest";
+    const originalUrl = "https://original.poto.nz";
+    const updatedUrl = "https://updated.poto.nz";
+
+    await backend.baseUrl.add(baseUrl);
+    const baseUrlId = await backend.baseUrl.getId(baseUrl);
+
+    await backend.createShortLink(shortId, originalUrl, baseUrlId);
+
+    const beforeResult = await backend.getTargetUrl(shortId, baseUrlId);
+    expect(beforeResult).toEqual(originalUrl);
+
+    const updateResult = await backend.updateShortLink(shortId, updatedUrl, baseUrlId);
+    expect(updateResult).toBe(true);
+
+    const afterResult = await backend.getTargetUrl(shortId, baseUrlId);
+    expect(afterResult).toEqual(updatedUrl);
+});
+
+test("update non-existent short link should return false with base URL", async () => {
+    const baseUrl = "https://example.com";
+    await backend.baseUrl.add(baseUrl);
+    const baseUrlId = await backend.baseUrl.getId(baseUrl);
+
+    const result = await backend.updateShortLink("non-existent", "https://new.url", baseUrlId);
+    expect(result).toBe(false);
+});
+
+test("update isolates between base URLs", async () => {
+    const baseUrl1 = "https://example1.com";
+    const baseUrl2 = "https://example2.com";
+    const shortId = "sharedUpdate";
+    const targetUrl1 = "https://target1.poto.nz";
+    const targetUrl2 = "https://target2.poto.nz";
+
+    await backend.baseUrl.add(baseUrl1);
+    await backend.baseUrl.add(baseUrl2);
+    const baseUrlId1 = await backend.baseUrl.getId(baseUrl1);
+    const baseUrlId2 = await backend.baseUrl.getId(baseUrl2);
+
+    await backend.createShortLink(shortId, targetUrl1, baseUrlId1);
+    await backend.createShortLink(shortId, targetUrl2, baseUrlId2);
+
+    await backend.updateShortLink(shortId, "https://updated1.poto.nz", baseUrlId1);
+
+    const result1 = await backend.getTargetUrl(shortId, baseUrlId1);
+    const result2 = await backend.getTargetUrl(shortId, baseUrlId2);
+
+    expect(result1).toEqual("https://updated1.poto.nz");
+    expect(result2).toEqual(targetUrl2);
+});
+
 test("removeShortLink with base URL", async () => {
     const baseUrl = "https://example.com";
     const shortId = "removeTest";
