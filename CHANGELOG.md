@@ -1,3 +1,17 @@
+## [0.3.2] - 2026-02-08
+
+### ⛰️  Features
+
+- Added updating short id
+
+### 🧪 Testing
+
+- Added tests for updating short link
+
+### ⚙️ Miscellaneous Tasks
+
+- Updated lint script name, make autofix the default
+
 ## [0.3.1] - 2026-02-07
 
 ## [0.3.0] - 2026-02-07
