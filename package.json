@@ -10,8 +10,8 @@
     "build": "bun run ./scripts/build.ts",
     "release": "bun run ./scripts/release.js",
     "publish": "bun run ./scripts/publish.ts",
-    "lint": "tsc --noEmit && eslint .",
-    "lint:fix": "tsc --noEmit && eslint --fix ."
+    "lint": "tsc --noEmit && eslint --fix .",
+    "lint:check": "tsc --noEmit && eslint ."
   },
   "workspaces": {
     "packages": [
