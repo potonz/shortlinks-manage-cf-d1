@@ -137,6 +137,20 @@ export function createPostgresBackend(connectionUri: string): IShortLinksManager
             `;
         },
 
+        async updateShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): Promise<boolean> {
+            const whereClause = baseUrlId === null
+                ? sql`WHERE short_id = ${shortId} AND base_url_id IS NULL`
+                : sql`WHERE short_id = ${shortId} AND base_url_id = ${baseUrlId}`;
+
+            const result = await sql`
+                UPDATE sl_links_map 
+                SET target_url = ${targetUrl}
+                ${whereClause}
+            `;
+
+            return result.count > 0;
+        },
+
         baseUrl: {
             async add(baseUrl: string): Promise<void> {
                 await sql`

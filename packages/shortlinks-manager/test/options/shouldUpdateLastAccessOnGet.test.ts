@@ -94,6 +94,20 @@ beforeEach(async () => {
             const baseMap = map.get(baseUrlId)!;
             baseMap.delete(shortId);
         },
+        updateShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): boolean {
+            if (!map.has(baseUrlId)) {
+                return false;
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            const value = baseMap.get(shortId);
+            if (!value) {
+                return false;
+            }
+
+            value.targetUrl = targetUrl;
+            return true;
+        },
         baseUrl: {
             async add() {
                 throw new Error("Function not implemented.");

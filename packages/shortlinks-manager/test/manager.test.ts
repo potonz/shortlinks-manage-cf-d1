@@ -91,6 +91,20 @@ beforeEach(async () => {
             const baseMap = map.get(baseUrlId)!;
             baseMap.delete(shortId);
         },
+        updateShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): boolean {
+            if (!map.has(baseUrlId)) {
+                return false;
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            const value = baseMap.get(shortId);
+            if (!value) {
+                return false;
+            }
+
+            value.targetUrl = targetUrl;
+            return true;
+        },
         baseUrl: {
             async add() {
                 throw new Error("Function not implemented.");
@@ -149,6 +163,7 @@ test("createShortLink should handle ID collisions by increasing length", async (
         updateShortLinkLastAccessTime: dummyBackend.updateShortLinkLastAccessTime,
         cleanUnusedLinks: dummyBackend.cleanUnusedLinks,
         removeShortLink: dummyBackend.removeShortLink,
+        updateShortLink: dummyBackend.updateShortLink,
         baseUrl: dummyBackend.baseUrl,
         init: dummyBackend.init,
     };
@@ -311,4 +326,25 @@ test("removeShortLink should remove from caches as well", async () => {
 
     expect(cacheManager.getTargetUrl(shortId, BASE_URL_ID)).resolves.toBeNull();
     expect(dummyCache.get(cacheKey)).toBeNull();
+});
+
+test("updateShortLink should update the target URL for an existing short link and return true", async () => {
+    const originalUrl = "https://example.com/original";
+    const newUrl = "https://example.com/updated";
+    const shortId = await manager.createShortLink(originalUrl, BASE_URL_ID);
+
+    expect(await manager.getTargetUrl(shortId, BASE_URL_ID)).toBe(originalUrl);
+
+    const result = await manager.updateShortLink(shortId, newUrl, BASE_URL_ID);
+
+    expect(result).toBe(true);
+    expect(await manager.getTargetUrl(shortId, BASE_URL_ID)).toBe(newUrl);
+});
+
+test("updateShortLink should return false if short link does not exist", async () => {
+    const newUrl = "https://example.com/updated";
+
+    const result = await manager.updateShortLink("non-existent-id", newUrl, BASE_URL_ID);
+
+    expect(result).toBe(false);
 });

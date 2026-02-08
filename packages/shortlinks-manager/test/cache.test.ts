@@ -108,6 +108,20 @@ beforeEach(async () => {
             const baseMap = map.get(baseUrlId)!;
             baseMap.delete(shortId);
         },
+        updateShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): boolean {
+            if (!map.has(baseUrlId)) {
+                return false;
+            }
+
+            const baseMap = map.get(baseUrlId)!;
+            const value = baseMap.get(shortId);
+            if (!value) {
+                return false;
+            }
+
+            value.targetUrl = targetUrl;
+            return true;
+        },
         baseUrl: {
             async add() {
                 throw new Error("Function not implemented.");
@@ -287,4 +301,21 @@ test("should write to all caches when creating a short link with multiple caches
     const secondCacheValue = secondCache.get(cacheKey);
     expect(firstCacheValue).toBe(url);
     expect(secondCacheValue).toBe(url);
+});
+
+test("should clear cache when updating a short link", async () => {
+    const originalUrl = "https://example.com/original";
+    const updatedUrl = "https://example.com/updated";
+    const shortId = await manager.createShortLink(originalUrl, BASE_URL_ID);
+
+    const cacheKey = normalizeCacheKey(BASE_URL_ID, shortId);
+    expect(dummyCache.get(cacheKey)).toBe(originalUrl);
+
+    await manager.updateShortLink(shortId, updatedUrl, BASE_URL_ID);
+
+    expect(dummyCache.get(cacheKey)).toBeNull();
+
+    const result = await manager.getTargetUrl(shortId, BASE_URL_ID);
+    expect(result).toBe(updatedUrl);
+    expect(dummyCache.get(cacheKey)).toBe(updatedUrl);
 });

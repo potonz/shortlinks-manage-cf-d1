@@ -49,6 +49,14 @@ export interface IShortLinksManagerBackend {
       * @param baseUrlId optional base URL ID to filter by
       */
     removeShortLink(shortId: string, baseUrlId: number | null): void | Promise<void>;
+    /**
+      * Update the target URL for an existing short link
+      * @param shortId the short ID to update
+      * @param targetUrl the new target URL
+      * @param baseUrlId optional base URL ID to filter by
+      * @returns true if the link was updated, false if not found
+      */
+    updateShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): boolean | Promise<boolean>;
 
     baseUrl: {
         /**

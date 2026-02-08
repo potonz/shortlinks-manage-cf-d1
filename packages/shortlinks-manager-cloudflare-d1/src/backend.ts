@@ -13,6 +13,8 @@ export function createD1Backend(db: D1Database): IShortLinksManagerD1Backend {
     let stmt_cleanUnusedLinks: D1PreparedStatement | null = null;
     let stmt_removeShortLinkWithoutBaseUrl: D1PreparedStatement | null = null;
     let stmt_removeShortLinkWithBaseUrl: D1PreparedStatement | null = null;
+    let stmt_updateShortLinkWithoutBaseUrl: D1PreparedStatement | null = null;
+    let stmt_updateShortLinkWithBaseUrl: D1PreparedStatement | null = null;
 
     let stmt_addBaseUrl: D1PreparedStatement | null = null;
     let stmt_removeBaseUrl: D1PreparedStatement | null = null;
@@ -136,6 +138,21 @@ PRAGMA optimize;
             else {
                 await stmt_removeShortLinkWithBaseUrl.bind(shortId, baseUrlId).run();
             }
+        },
+
+        async updateShortLink(shortId: string, targetUrl: string, baseUrlId: number | null): Promise<boolean> {
+            if (!stmt_updateShortLinkWithoutBaseUrl) {
+                stmt_updateShortLinkWithoutBaseUrl = db.prepare("UPDATE sl_links_map SET target_url = ? WHERE short_id = ? AND base_url_id IS NULL");
+            }
+            if (!stmt_updateShortLinkWithBaseUrl) {
+                stmt_updateShortLinkWithBaseUrl = db.prepare("UPDATE sl_links_map SET target_url = ? WHERE short_id = ? AND base_url_id = ?");
+            }
+
+            const result = baseUrlId === null
+                ? await stmt_updateShortLinkWithoutBaseUrl.bind(targetUrl, shortId).run()
+                : await stmt_updateShortLinkWithBaseUrl.bind(targetUrl, shortId, baseUrlId).run();
+
+            return result.meta.changes > 0;
         },
 
         baseUrl: {
