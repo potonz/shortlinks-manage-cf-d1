@@ -1,3 +1,9 @@
+## [0.3.3] - 2026-02-21
+
+### ⛰️  Features
+
+- Added get base url by id func
+
 ## [0.3.2] - 2026-02-08
 
 ### ⛰️  Features
