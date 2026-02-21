@@ -61,6 +61,21 @@ test("baseUrl: get base URL ID", async () => {
     expect(id).toBeGreaterThan(0);
 });
 
+test("baseUrl: get base URL by ID", async () => {
+    const baseUrl = "https://example.com";
+
+    await backend.baseUrl.add(baseUrl);
+    const id = await backend.baseUrl.getId(baseUrl);
+
+    const result = await backend.baseUrl.getById(id);
+
+    expect(result).toBe(baseUrl);
+});
+
+test("baseUrl: getBaseUrl throws for non-existent ID", async () => {
+    await expect(backend.baseUrl.getById(99999)).rejects.toThrow();
+});
+
 test("baseUrl: remove base URL", async () => {
     const baseUrl = "https://example.com";
 

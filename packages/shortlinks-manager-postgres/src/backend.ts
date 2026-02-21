@@ -192,6 +192,16 @@ export function createPostgresBackend(connectionUri: string): IShortLinksManager
                 }
                 return result[0].id;
             },
+
+            async getById(id: number): Promise<string> {
+                const result = await sql<{ base_url: string }[]>`
+                    SELECT base_url FROM sl_base_urls WHERE id = ${id} LIMIT 1
+                `;
+                if (result.length === 0) {
+                    throw new Error(`Base URL ID not found: ${id}`);
+                }
+                return result[0].base_url;
+            },
         },
     };
 }

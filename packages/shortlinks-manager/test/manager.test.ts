@@ -118,6 +118,12 @@ beforeEach(async () => {
             getId: function (): number | Promise<number> {
                 return BASE_URL_ID;
             },
+            getById: function (id: number): string | Promise<string> {
+                if (id === BASE_URL_ID) {
+                    return "https://example.com";
+                }
+                throw new Error(`Base URL ID not found: ${id}`);
+            },
         },
     };
 

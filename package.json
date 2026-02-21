@@ -10,7 +10,7 @@
     "build": "bun run ./scripts/build.ts",
     "release": "bun run ./scripts/release.js",
     "publish": "bun run ./scripts/publish.ts",
-    "lint": "tsc --noEmit && eslint --fix .",
+    "lint": "tsc --noEmit && tsc -p packages/shortlinks-manager/tsconfig.json --noEmit && tsc -p packages/shortlinks-manager-cloudflare-d1/tsconfig.json --noEmit && tsc -p packages/shortlinks-manager-mysql/tsconfig.json --noEmit && tsc -p packages/shortlinks-manager-postgres/tsconfig.json --noEmit && eslint --fix .",
     "lint:check": "tsc --noEmit && eslint ."
   },
   "workspaces": {

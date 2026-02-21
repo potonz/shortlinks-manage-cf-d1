@@ -5,6 +5,7 @@ export interface IBaseUrlManager {
     remove(baseUrl: number): Promise<void>;
     list(includeInactive?: boolean): Promise<IBaseUrlRecord[]>;
     getBaseUrlId(baseUrl: string): Promise<number>;
+    getBaseUrl(id: number): Promise<string>;
 }
 
 export function createBaseUrlManager(backend: IShortLinksManagerBackend): IBaseUrlManager {
@@ -20,6 +21,9 @@ export function createBaseUrlManager(backend: IShortLinksManagerBackend): IBaseU
         },
         async getBaseUrlId(baseUrl: string): Promise<number> {
             return backend.baseUrl.getId(baseUrl);
+        },
+        async getBaseUrl(id: number): Promise<string> {
+            return backend.baseUrl.getById(id);
         },
     };
 }

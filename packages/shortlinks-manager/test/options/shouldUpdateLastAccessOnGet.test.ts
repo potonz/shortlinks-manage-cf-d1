@@ -121,6 +121,9 @@ beforeEach(async () => {
             getId: function (): number | Promise<number> {
                 return BASE_URL_ID;
             },
+            getById: function (): string | Promise<string> {
+                return "https://example.com";
+            },
         },
     };
 });

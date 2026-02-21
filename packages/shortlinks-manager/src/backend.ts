@@ -81,5 +81,11 @@ export interface IShortLinksManagerBackend {
          * @returns the base URL ID or null if not found
          */
         getId(baseUrl: string): number | Promise<number>;
+        /**
+         * Get the base URL for a given ID
+         * @param id the ID to get the base URL for
+         * @returns the base URL string
+         */
+        getById(id: number): string | Promise<string>;
     };
 }

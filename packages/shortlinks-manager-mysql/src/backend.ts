@@ -313,6 +313,23 @@ export function createMysqlBackend(connection: string | IConnectionConfig): ISho
                     await connection.end();
                 }
             },
+
+            async getById(id: number): Promise<string> {
+                const connection = await mysql.createConnection(config);
+                try {
+                    const [rows] = await connection.execute<mysql.RowDataPacket[]>(
+                        "SELECT base_url FROM sl_base_urls WHERE id = ? LIMIT 1",
+                        [id],
+                    );
+                    if (rows.length === 0) {
+                        throw new Error(`Base URL ID not found: ${id}`);
+                    }
+                    return rows[0].base_url;
+                }
+                finally {
+                    await connection.end();
+                }
+            },
         },
     };
 }

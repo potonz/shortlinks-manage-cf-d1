@@ -21,6 +21,7 @@ export function createD1Backend(db: D1Database): IShortLinksManagerD1Backend {
     let stmt_listBaseUrlsWithoutInactive: D1PreparedStatement | null = null;
     let stmt_listBaseUrlsWithInactive: D1PreparedStatement | null = null;
     let stmt_getBaseUrlId: D1PreparedStatement | null = null;
+    let stmt_getBaseUrlById: D1PreparedStatement | null = null;
     let stmt_getLinkWithBaseUrl: D1PreparedStatement | null = null;
     let stmt_getLinkWithBaseUrlById: D1PreparedStatement | null = null;
 
@@ -202,6 +203,17 @@ PRAGMA optimize;
                     throw new Error(`Base URL not found: ${baseUrl}`);
                 }
                 return result.id;
+            },
+
+            async getById(id: number): Promise<string> {
+                if (!stmt_getBaseUrlById) {
+                    stmt_getBaseUrlById = db.prepare("SELECT base_url FROM sl_base_urls WHERE id = ? LIMIT 1");
+                }
+                const result = await stmt_getBaseUrlById.bind(id).first<{ base_url: string }>();
+                if (!result) {
+                    throw new Error(`Base URL ID not found: ${id}`);
+                }
+                return result.base_url;
             },
         },
     };
