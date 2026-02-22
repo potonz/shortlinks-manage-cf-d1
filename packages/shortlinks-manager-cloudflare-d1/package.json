@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "date-fns": "catalog:",
-    "miniflare": "^4.20251217.0",
+    "miniflare": "^4.20260219.0",
     "wrangler": "^4.54.0"
   },
   "main": "./dist/index.js",
