@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@stylistic/eslint-plugin": "^5.6.1",
+    "@stylistic/eslint-plugin": "^5.9.0",
     "@types/bun": "latest",
     "dts-bundle-generator": "^9.5.1",
     "eslint": "^9.39.2",
