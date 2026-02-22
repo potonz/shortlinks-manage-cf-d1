@@ -1,3 +1,9 @@
+## [0.3.4] - 2026-02-22
+
+### 🐛 Bug Fixes
+
+- *(actions)* Fixed lint check, must build first
+
 ## [0.3.3] - 2026-02-21
 
 ### ⛰️  Features
