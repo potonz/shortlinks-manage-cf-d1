@@ -11,7 +11,7 @@
         "dts-bundle-generator": "^9.5.1",
         "eslint": "^9.39.2",
         "eslint-plugin-simple-import-sort": "^12.1.1",
-        "globals": "^17.0.0",
+        "globals": "^17.3.0",
         "nanospinner": "^1.2.2",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.51.0",
@@ -22,14 +22,14 @@
     },
     "packages/shortlinks-manager": {
       "name": "@potonz/shortlinks-manager",
-      "version": "0.2.3",
+      "version": "0.3.4",
       "devDependencies": {
         "date-fns": "catalog:",
       },
     },
     "packages/shortlinks-manager-cloudflare-d1": {
       "name": "@potonz/shortlinks-manager-cf-d1",
-      "version": "0.2.3",
+      "version": "0.3.4",
       "dependencies": {
         "@potonz/shortlinks-manager": "workspace:*",
       },
@@ -41,7 +41,7 @@
     },
     "packages/shortlinks-manager-mysql": {
       "name": "@potonz/shortlinks-manager-mysql",
-      "version": "0.1.0",
+      "version": "0.3.4",
       "dependencies": {
         "@potonz/shortlinks-manager": "workspace:*",
         "mysql2": "^3.11.0",
@@ -52,7 +52,7 @@
     },
     "packages/shortlinks-manager-postgres": {
       "name": "@potonz/shortlinks-manager-postgres",
-      "version": "0.1.0",
+      "version": "0.3.4",
       "dependencies": {
         "@potonz/shortlinks-manager": "workspace:*",
         "postgres": "^3.4.5",
@@ -390,7 +390,7 @@
 
     "glob-to-regexp": ["glob-to-regexp@0.4.1", "", {}, "sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw=="],
 
-    "globals": ["globals@17.0.0", "", {}, "sha512-gv5BeD2EssA793rlFWVPMMCqefTlpusw6/2TbAVMy0FzcG8wKJn4O+NqJ4+XWmmwrayJgw5TzrmWjFgmz1XPqw=="],
+    "globals": ["globals@17.3.0", "", {}, "sha512-yMqGUQVVCkD4tqjOJf3TnrvaaHDMYp4VlUSObbkIiuCPe/ofdMBFIAcBbCSRFWOnos6qRiTVStDwqPLUclaxIw=="],
 
     "has-flag": ["has-flag@4.0.0", "", {}, "sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ=="],
 
